@@ -75,7 +75,7 @@ c.Start()
 ```go
 c := command.InitCrontab(engine)
 c.AddFunc("0 0 2 * * *", func(ctx *gin.Context) error {
-    return {module}.FlushDailyStats(ctx)
+    return {module-N}.{AggregateMethod-A}(ctx)
 })
 // InitCrontab 内部已 Start，不要再 Start
 ```

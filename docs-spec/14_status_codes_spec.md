@@ -100,7 +100,7 @@
 #### 2.3.4 资源 / 接口异常（11x）
 | 数值 | 常量 | 触发条件 |
 |------|------|---------|
-| {N} | ErrStateInsufficient | {核心数值字段}不足且无可用额度 |
+| {N} | ErrStateInsufficient | {核心数值字段}不足且无可用补充资源 |
 | {N} | ErrActionNotGranted | 未授权访问该功能 |
 | {N} | ErrDailyLimitExceeded | 功能日调用上限达到 |
 | {N} | ErrConcurrencyLimit | QPS 并发上限 |

@@ -145,7 +145,7 @@
 | 常量 | 值 | 用途 |
 |------|-----|------|
 | `LockCacheIntegrityCheck` | `5 * time.Minute` | 缓存巡检任务锁 |
-| `LockFlushDailyStats` | `30 * time.Minute` | flush_daily_stats 任务锁（如多进程触发） |
+| `Lock{PeriodicAggregateTask}` | `30 * time.Minute` | `{periodic-aggregate-task}` 任务锁（如多进程触发） |
 ```
 
 ### 3.6 ID 生成规则
@@ -162,7 +162,7 @@
 | `{entity-C-id}` | `{prefix-C}{yyyyMMddHHmmss}{randN位}` | `{prefix-C}{date-second}{rand-hex}` |
 | `{entity-D-id}` | `{prefix-D}{yyyyMMddHHmmss}{seqN位}` | `{prefix-D}{date-second}{seq}` |
 
-> 真实业务的 ID 命名（如 userId / orderId / logId）见末尾 §11 参考示例。
+> 真实业务的 ID 命名（按业务实体替换 `{entity-id}`）见末尾 §11 参考示例。
 
 ### 6.2 占位符规则
 
@@ -259,8 +259,8 @@ const (
 
 // 分布式锁 TTL
 const (
-    LockCacheIntegrityCheck = 5 * time.Minute
-    LockFlushDailyStats     = 30 * time.Minute
+    LockCacheIntegrityCheck    = 5 * time.Minute
+    Lock{PeriodicAggregateTask} = 30 * time.Minute
 )
 
 // Redis Key 模板

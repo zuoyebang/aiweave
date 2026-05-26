@@ -77,10 +77,19 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
 2. 在主体范围内 grep 业务名关键词清单（不区分大小写）：
    - **英文动作 / 方法**：`Register` / `Login` / `Logout` / `Verify` / `Report` / `Recharge` / `Deduct` / `Activate` / `Refund` / `Withdraw`
    - **英文实体 ID**：`userId` / `orderId` / `accountId` / `rechargeId` / `logId`
-   - **英文 struct / Service**：`RegisterReq` / `LoginReq` / `VerifyReq` / `VerifyResp` / `ReportReq` / `AccountService`
-   - **英文字段 / 概念**：`verify_code` / `balance` / `password_hash`
-   - **英文文件 / 函数 / 变量**：`account_flow` / `auth_flow` / `billing_flow` / `pickMode` / `generateUserId` / `userSeq` / `monthly-report` / `daily-report` / `call_log_consumer`
-   - **中文业务概念**：`用户` / `订单` / `余额` / `注册` / `登录` / `扣减` / `充值` / `开户` / `套餐` / `状态扣减` / `状态上报` / `余额检查` / `负余额` / `余额已扣` / `余额不足` / `用户禁用` / `用户态`
+   - **英文 struct / Service**：`RegisterReq` / `LoginReq` / `VerifyReq` / `VerifyResp` / `ReportReq` / `AccountService` / `BillingService` / `UserService` / `OrderService`
+   - **英文字段 / 概念**：`verify_code` / `balance` / `password_hash` / `access_token` / `refresh_token` / `app_secret`
+   - **英文业务模块名**（v1.3 补充，与 PRINCIPLES §12.3 反例对照表对齐）：
+     - 典型业务模块：`account` / `order` / `billing` / `product` / `merchant` / `payment` / `recharge` / `customer` / `cart` / `checkout`
+     - 作 `package` 声明 / 路径 `service/` / `notice.module` 标签值 / Redis 命名空间前缀等出现皆视为泄漏
+   - **英文业务字段 / 业务量化**（v1.3 补充，含计数 / 计费 / 额度类业务专属字段）：
+     - 业务标识字段：`app_key` / `api_code` / `account_id` / `order_id` / `product_id` / `merchant_id`
+     - 业务量化字段：`total_amount` / `used_amount` / `remaining` / `quota`
+     - 业务计数字段：`total_count` / `success_count` / `fail_count` / `counted_count`
+     - 业务消息字段：`msg.cost` / `msg.billed` / `msg.statusCode`（业务语境而非 HTTP）
+     - 业务过期时间：`expire_at`（业务过期，vs 通用 TTL）
+   - **英文文件 / 函数 / 变量**：`account_flow` / `auth_flow` / `billing_flow` / `pickMode` / `generateUserId` / `userSeq` / `monthly-report` / `daily-report` / `call_log_consumer` / `CleanExpiredQuota` / `FlushDailyStats`（任务名 / 方法名含业务词）
+   - **中文业务概念**：`用户` / `订单` / `余额` / `注册` / `登录` / `扣减` / `充值` / `开户` / `套餐` / `状态扣减` / `状态上报` / `余额检查` / `负余额` / `余额已扣` / `余额不足` / `用户禁用` / `用户态` / `额度` / `已使用量` / `总额度` / `剩余额度` / `计费` / `结算`
 3. 命中 → 标 🔴 严重；标注文件路径 + 行号 + 命中关键词；建议动作"迁移到末尾参考示例段或改占位符"。
 4. 末尾参考示例段必须有 `> ⚠️` 警告行；缺失 → 标 🟡 中度。
 5. 误报抑制（按优先级）：

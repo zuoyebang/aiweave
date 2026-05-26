@@ -171,13 +171,13 @@ loop:
 3. 同步更新 Redis 日统计：
    \`\`\`
    for each msg:
-     HINCRBY {stats-key}:{entityId}:{actionId}:{date} total_count 1
+     HINCRBY {stats-key}:{entityId}:{actionId}:{date} {counter-total} 1
      if HINCRBY 返回 1: EXPIRE 172800 (48h)
-     if msg.billed == 1:
-       HINCRBY {stats-key}:* counted_count 1
-       HINCRBY {stats-key}:* total_amount {msg.cost}
-     if msg.statusCode == 200:
-       HINCRBY {stats-key}:* success_count 1
+     if msg.{biz-flag-1}:
+       HINCRBY {stats-key}:* {counter-N} 1
+       HINCRBY {stats-key}:* {amount-field} {msg.{amount-source}}
+     if msg.{status-field} == 200:
+       HINCRBY {stats-key}:* {counter-success} 1
      SADD {stats-key}:dirty {entityId}:{actionId}:{date}
    \`\`\`
 4. 提交 Kafka offset（手动模式）
@@ -259,7 +259,7 @@ helpers.{Example}PubClient.Pub(ctx, "{example-topic}", msg)
 - 异步降级：失败的消息暂存内存 buffer，定时重发（避免阻塞主流程）
 ```
 
-> 真实业务示例（如业务校验链中的 LogId / billing 计费 / Report 主流程）见末尾 §14 参考示例。
+> 真实业务示例（按具体 `{Module}` 替换 `{id-field}` / `{核心写入动作}` / `{主流程方法}`）见末尾 §14 参考示例。
 
 ---
 

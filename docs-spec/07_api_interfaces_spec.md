@@ -176,7 +176,7 @@ type {Method-N}Req struct {
 
 > Controller 从 `ctx.Query(...)` 和 `ctx.GetHeader(...)` 直接构造结构体；不使用 `ShouldBindJSON`（GET 无 body）。
 
-> 真实业务示例（如业务校验链 VerifyReq）见末尾 §10 参考示例。
+> 真实业务示例（按具体 Method 替换 `{Method-N}Req`）见末尾 §10 参考示例。
 ```
 
 **对于 POST + JSON 请求**，binding tag 必须显式（占位符示意）：
@@ -189,7 +189,7 @@ type {Method-N}Req struct {
 }
 ```
 
-> 真实业务的 binding tag 完整示例见末尾 §10 参考示例（如账号注册类操作的 RegisterReq）。
+> 真实业务的 binding tag 完整示例见末尾 §10 参考示例（按具体 `{Module}` 的 `{Method-N}` 替换 `{Module}{Method-N}Req`）。
 
 ### 5.4 N.1.4 响应结构（强制：成功 + 失败两个 JSON 示例）
 
@@ -243,7 +243,7 @@ type {Method-N}Resp struct {
 
 每个字段必有 JSON tag。**字段顺序与 JSON 示例一致**，方便对照。
 
-> 真实业务（如业务校验链 VerifyResp）的完整字段示例见末尾 §10.6 参考示例。
+> 真实业务的完整字段示例（按具体 Method 替换 `{Method-N}Resp`）见末尾 §10.6 参考示例。
 
 ### 5.6 N.1.6 错误码映射（强制）
 
@@ -289,7 +289,7 @@ func {Method-N}(ctx *gin.Context) {
 \`\`\`
 ```
 
-> 真实业务的 Controller 伪代码（如业务校验链 Verify）见末尾 §10 参考示例。
+> 真实业务的 Controller 伪代码（按具体 Controller `{Module}.{Method-N}` 替换）见末尾 §10 参考示例。
 
 **必填**：
 - 参数绑定方式（`ShouldBindJSON` / `ShouldBindQuery` / 手动构造）

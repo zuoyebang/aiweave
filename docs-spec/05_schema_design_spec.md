@@ -223,7 +223,7 @@ CREATE TABLE `tbl` (...);
 | 数据类别 | Redis 角色 | MySQL 角色 | 同步机制 |
 |----------|-----------|-----------|---------|
 | 业务校验热数据（{ns}:info / {ns2}:info） | 主（业务运行时只读 Redis） | 持久化（管理操作双写） | 双写 + 缓存预热 |
-| 状态数据（quota / balance） | 主（实时增减） | flush 目标 | 定时 flush 增量 |
+| {核心数值状态数据} | 主（实时增减） | flush 目标 | 定时 flush 增量 |
 | 业务事件流水（{example_log}） | 不缓存 | 主 | MQ 异步 INSERT |
 | 限流数据（rl:*） | 唯一存储 | 不持久化 | 自然过期 |
 
@@ -303,13 +303,13 @@ func ShardTableName(t time.Time) string {
 | 索引名 | 字段 | 类型 | 用途 |
 |--------|------|------|------|
 | PRIMARY | id | 主键 | 主键查询 |
-| uk_app_key | app_key | 唯一 | 业务唯一约束 |
-| idx_actor_id | {actor_id_field} | 普通 | {核心实体}维度的相关资源列表查询 |
-| idx_status | status | 普通 | 状态过滤 |
+| `uk_{business-key}` | `{business-key}` | 唯一 | 业务唯一约束 |
+| `idx_{actor-id-field}` | `{actor-id-field}` | 普通 | {核心实体}维度的相关资源列表查询 |
+| `idx_{status-field}` | `{status-field}` | 普通 | 状态过滤 |
 ```
 
 不允许的写法：
-- 索引名是默认生成的（如 `app_key_2`）
+- 索引名是默认生成的（如自动后缀 `_2` 等无语义命名）
 - 不写索引用途
 - 复合索引不写字段顺序
 

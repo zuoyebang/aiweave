@@ -173,12 +173,12 @@ BUILD_STATUS.md 必须按以下章节顺序组织：
 
 **生成顺序建议**（依赖最少 → 最多）：
 ```
-1. auditlog
-2. {module}
-3. {module}
-4. product
-5. billing
-6. auth
+1. {audit-module}
+2. {module-1}
+3. {module-2}
+4. {module-N-1}
+5. {module-N}
+6. {auth-module}
 7. {disabled_module}  ← 🚫 跳过
 ```
 ```

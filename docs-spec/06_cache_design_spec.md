@@ -97,29 +97,31 @@ ASCII 图示意全部数据写入路径：
 ```markdown
 #### 2.X.Y `{state-1}:{entityId}:{actionId}` Hash 完整字段映射
 
-此 Key 是该 EntityID 对该接口的**所有未过期额度记录的聚合值**（MySQL 中可能有多条 `{example_table_quota}` 记录，Redis 中只存一个聚合 Hash）。
+此 Key 是该 EntityID 对该接口的**所有 {核心写入维度} 记录的聚合值**（MySQL 中可能有多条 `{example_table_*}` 记录，Redis 中只存一个聚合 Hash）。
 
 | Field | 类型 | 单位 | 说明 | 写入时机 | 读取时机 | 与 MySQL 的关系 |
 |-------|------|------|------|---------|---------|---------------|
-| total | int64 | 次 | 总额度 | {核心写入动作}时聚合写入；cache_warmup | 校验步骤 ⑪ | = `SUM({example_table_quota}.total_amount) WHERE expire_at > NOW()` |
-| used | int64 | 次 | 已使用量 | {核心写入动作} HINCRBY +1 | 校验步骤 ⑪ | ≈ `SUM({example_table_quota}.used_amount)` + delta |
+| `{counter-total}` | int64 | {单位} | {总量语义} | {核心写入动作}时聚合写入；cache_warmup | {校验步骤} | = `SUM({example_table_*}.{amount-field}) WHERE {time-cond}` |
+| `{counter-used}` | int64 | {单位} | {已用量语义} | {核心写入动作} HINCRBY +1 | {校验步骤} | ≈ `SUM({example_table_*}.{used-field})` + {delta-field} |
 | ... |
 
-**delta 字段语义详解**：
+> 真实业务示例（按业务核心字段替换 `{counter-*}` / `{amount-field}` / `{delta-field}` 等占位符）见末尾 §15 参考示例。
+
+**`{delta-field}` 字段语义详解**：
 
 \`\`\`
 {核心写入动作}流程（{module}.{state-report-method}）：
-  HINCRBY {state-1}:{entityId}:{actionId} used 1     ← 实时值 +1
-  HINCRBY {state-1}:{entityId}:{actionId} delta 1    ← 未提交增量 +1
-  SADD {state-1}:dirty {entityId}:{actionId}         ← 标记为脏
+  HINCRBY {state-1}:{entityId}:{actionId} {counter-used} 1     ← 实时值 +1
+  HINCRBY {state-1}:{entityId}:{actionId} {delta-field} 1      ← 未提交增量 +1
+  SADD {state-1}:dirty {entityId}:{actionId}                   ← 标记为脏
 
 flush_state_to_db 流程：
-  delta = HGET {state-1}:{entityId}:{actionId} delta ← 读取增量
-  HDEL {state-1}:{entityId}:{actionId} delta         ← 重置增量
-  MySQL: UPDATE {example_table_quota} SET used_amount = LEAST(used_amount + delta, total_amount)
+  {delta-field} = HGET {state-1}:{entityId}:{actionId} {delta-field}   ← 读取增量
+  HDEL {state-1}:{entityId}:{actionId} {delta-field}                   ← 重置增量
+  MySQL: UPDATE {example_table_*} SET {used-field} = LEAST({used-field} + {delta-field}, {amount-field})
 \`\`\`
 
-**关键不变量**：`Redis.used = MySQL.SUM(used_amount) + Redis.delta`。flush 后 delta 被清零。
+**关键不变量**：`Redis.{counter-used} = MySQL.SUM({used-field}) + Redis.{delta-field}`。flush 后 `{delta-field}` 被清零。
 ```
 
 ### 4.3 必填字段（Hash 字段表）
@@ -138,7 +140,7 @@ flush_state_to_db 流程：
 ### 4.4 单位规则（容易出错的点）
 
 ```markdown
-**单位转换规则**：Redis 存分，MySQL 存元。`Redis.total / 100 ≈ MySQL.balance`（flush 后精确对齐）。
+**单位转换规则**：Redis 与 MySQL 单位可能不同，必须显式声明换算关系（如 `Redis.{counter} / 100 ≈ MySQL.{amount-field}`，flush 后精确对齐）。
 ```
 
 任何单位转换都必须**显式写出**。AI 在生成 Service 代码时如果漏掉 *100 / /100，会产生重大 bug。
@@ -293,9 +295,9 @@ flush 完成后做 **样本对账**：
 
 ```markdown
 flush 后随机抽取 N 个 key：
-  redis_used = HGET key used
-  mysql_used = SUM(SELECT used_amount FROM {example_table_quota} WHERE app_key=? AND api_code=?)
-  if abs(redis_used - mysql_used) > 误差阈值：
+  redis_{counter-used} = HGET key {counter-used}
+  mysql_{counter-used} = SUM(SELECT {used-field} FROM {example_table_*} WHERE {biz-key-1}=? AND {biz-key-2}=?)
+  if abs(redis_{counter-used} - mysql_{counter-used}) > 误差阈值：
       告警 + 触发完整性巡检
 ```
 
@@ -427,3 +429,58 @@ func LoadEntityInfo(ctx *gin.Context, entityId string) (*EntityInfoCache, bool)
 | 修改 Hash field 语义 | §2.x.y Hash 字段映射 + 受影响的 Service / 定时任务文档 |
 | 调整 TTL | §2.x 表格更新 + 受影响的限流/缓存预热说明 |
 | 删除 Key | §2.x / §3（如有本地缓存）/ §4（如有脏标记）全部清理 |
+
+---
+
+## 15. 参考示例（仅示意，落地按业务替换）
+
+> ⚠️ 以下为示意，规范本体（§1-§14）已用占位符表达；落地工程时按业务语义替换占位符，不得直接照搬本节具体业务名作为规范。
+>
+> 示例服从 [`PRINCIPLES.md §12 占位符规则`](../PRINCIPLES.md#12-占位符规则强制--双轨结构) 的"参考示例段豁免"。
+
+### 15.1 §4.2 Hash 字段映射（示例：某计数 / 额度类业务）
+
+`acc:quota:{userId}:{actionId}` Hash 字段：
+
+| Field | 类型 | 单位 | 说明 | 写入时机 | 读取时机 | 与 MySQL 的关系 |
+|-------|------|------|------|---------|---------|---------------|
+| total | int64 | 次 | 总额度 | 状态上报时聚合写入；cache_warmup | 校验步骤 ⑪ | = `SUM(quota.total_amount) WHERE expire_at > NOW()` |
+| used | int64 | 次 | 已使用量 | 状态上报 HINCRBY +1 | 校验步骤 ⑪ | ≈ `SUM(quota.used_amount)` + delta |
+| delta | int64 | 次 | 未提交增量 | 状态上报 HINCRBY +1 | flush 任务 HGET → HDEL | flush 时增量写入 MySQL |
+| expire_at | string | datetime | 最早到期时间 | 状态上报时取最早 | 校验步骤 ⑪ | = `MIN(quota.expire_at)` |
+
+**关键不变量**：`Redis.used = MySQL.SUM(quota.used_amount) + Redis.delta`
+
+### 15.2 §4.4 单位转换规则（示例）
+
+如金额类场景：
+
+```
+Redis 存"分"（int64），MySQL 存"元"（decimal(10,2)）：
+  Redis.balance_in_cents / 100 ≈ MySQL.balance
+```
+
+如计数类场景通常 Redis 和 MySQL 同单位（次/条），无需转换。
+
+### 15.3 §9.2 一致性校验伪码（示例）
+
+```
+flush 后随机抽取 N 个 key：
+  redis_used = HGET acc:quota:userId:actionId used
+  mysql_used = SUM(SELECT used_amount FROM quota WHERE app_key=? AND api_code=?)
+  if abs(redis_used - mysql_used) > 误差阈值：
+      告警 + 触发完整性巡检
+```
+
+### 15.4 占位符 → 业务名 对照表（示例）
+
+| 占位符 | 本节示例值 |
+| --- | --- |
+| `{counter-total}` / `{counter-used}` / `{delta-field}` | total / used / delta |
+| `{amount-field}` / `{used-field}` | total_amount / used_amount |
+| `{time-cond}` | `expire_at > NOW()` |
+| `{example_table_*}` | quota |
+| `{biz-key-1}` / `{biz-key-2}` | app_key / api_code |
+| `{核心写入动作}` | 状态上报 |
+| `{核心写入维度}` | 未过期额度记录 |
+| `{校验步骤}` | 校验步骤 ⑪ |

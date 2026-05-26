@@ -277,7 +277,7 @@ tlog.ErrorLogger(ctx, "x failed", tlog.String("err", err.Error()))
 \`\`\`go
 // 中间件或 service 入口
 ctx.Set("notice.opId", req.ActorId)
-ctx.Set("notice.module", "billing")
+ctx.Set("notice.module", "{module}")
 
 // 后续 tlog.* 自动包含 opId、module 字段
 \`\`\`

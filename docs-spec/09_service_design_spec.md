@@ -52,7 +52,7 @@ service_design.md（总览）必须按以下章节顺序组织：
 | 数据源 | 使用场景 | 访问方式 |
 |--------|---------|---------|
 | Redis | 核心业务链路、状态变更操作、限流 | `helpers.{ProjectName}CacheClient`（rediscache.Client） |
-| MySQL core | {核心实体类}、权限、额度 | `helpers.MysqlClientCore`（GORM） |
+| MySQL core | {核心实体类}、权限、{核心数值类} | `helpers.MysqlClientCore`（GORM） |
 | MySQL trade | {业务对象类}、状态变化、报表 | `helpers.MysqlClientTrade`（GORM） |
 | MySQL log | 日统计、{受限模块}事件、审计 | `helpers.MysqlClientLog`（GORM） |
 | MySQL {example_log} | 业务事件流水 | `helpers.MysqlClientCallLog`（GORM） |
@@ -125,9 +125,9 @@ ASCII DAG（占位符示意）：
 ```markdown
 | 任务 | Service 方法 | 并行策略 | 说明 |
 |------|-------------|---------|------|
-| flush_state_to_db | `{module}.FlushStateToDb(ctx)` | 多进程并行安全（SPOP） | Redis → MySQL 增量 flush |
-| cache_integrity_check | `{module}.CacheIntegrityCheck(ctx)` | 分布式锁互斥 | 缓存完整性巡检 |
-| flush_daily_stats | `{module}.FlushDailyStats(ctx)` | 单进程外部调度 | 日统计聚合 |
+| `{flush-state-task}` | `{module}.{FlushStateMethod}(ctx)` | 多进程并行安全（SPOP） | Redis → MySQL 增量 flush |
+| `{integrity-check-task}` | `{module}.{IntegrityCheckMethod}(ctx)` | 分布式锁互斥 | 缓存完整性巡检 |
+| `{periodic-aggregate-task}` | `{module}.{AggregateMethod}(ctx)` | 单进程外部调度 | 周期性聚合任务 |
 ```
 
 ---
@@ -321,7 +321,7 @@ func generate{Entity}Id() string {
 冲突处理：依赖唯一索引 + 重试 N 次。
 ```
 
-> 实际工程的 ID 格式（如 userId / orderId）见 [`docs-spec/16_constants_spec.md`](16_constants_spec.md) §6 与末尾 §16 参考示例。
+> 实际工程的 ID 格式（按业务实体替换 `{entity-id}`）见 [`docs-spec/16_constants_spec.md`](16_constants_spec.md) §6 与末尾 §16 参考示例。
 
 ---
 

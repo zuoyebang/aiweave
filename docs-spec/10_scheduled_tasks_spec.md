@@ -62,11 +62,11 @@ scheduled_tasks_design.md 必须按以下章节顺序组织：
 ```markdown
 | 任务名 | 类型 | Service 方法 | 触发频率 | 并行策略 | 文档章节 |
 |-------|------|-------------|---------|---------|---------|
-| flush-state-to-db | cycle | `{module-3}.FlushStateToDb` | 每 5min | SPOP（多进程并行安全） | §3.1 |
-| cache-integrity-check | cycle | `{auth-module}.CacheIntegrityCheck` | 每 1h | 分布式锁互斥 | §3.2 |
-| flush-daily-stats | cobra | `{module-3}.FlushDailyStats` | 每日 {time} | 单进程外部调度 | §2.1 |
-| {periodic-aggregate-task} | cobra | `{module-N}.{AggregateMethod}` | 每月 1 日 {time} | 单进程外部调度 | §2.2 |
-| clean-expired-quota | cobra | `{module-3}.CleanExpiredQuota` | 每日 04:00 | 单进程外部调度 | §2.3 |
+| `{flush-state-task}` | cycle | `{module-N}.{FlushStateMethod}` | 每 5min | SPOP（多进程并行安全） | §3.1 |
+| `{integrity-check-task}` | cycle | `{auth-module}.{IntegrityCheckMethod}` | 每 1h | 分布式锁互斥 | §3.2 |
+| `{periodic-aggregate-task-A}` | cobra | `{module-N}.{AggregateMethod-A}` | 每日 {time} | 单进程外部调度 | §2.1 |
+| `{periodic-aggregate-task-B}` | cobra | `{module-N}.{AggregateMethod-B}` | 每月 1 日 {time} | 单进程外部调度 | §2.2 |
+| {clean-expired-task} | cobra | `{module-N}.{cleanup-method}` | 每日 04:00 | 单进程外部调度 | §2.3 |
 | {topic}-consumer | cobra（长驻） | Kafka Consumer | 长驻 | 单进程外部调度（独立进程） | §2.X |
 ```
 
@@ -89,9 +89,9 @@ scheduled_tasks_design.md 必须按以下章节顺序组织：
 // router/command.go
 func Commands(rootCmd *cobra.Command, engine *gin.Engine) {
     rootCmd.AddCommand(&cobra.Command{
-        Use: "flush-daily-stats",
+        Use: "{periodic-aggregate-task-A}",
         Run: func(cmd *cobra.Command, args []string) {
-            run(engine, command_ctrl.FlushDailyStats, args...)
+            run(engine, command_ctrl.{AggregateMethod-A}, args...)
         },
     })
     rootCmd.AddCommand(&cobra.Command{
@@ -113,26 +113,26 @@ func run(engine *gin.Engine, f func(ctx *gin.Context, args ...string) error, arg
 ### 5.2 单个任务的完整规格
 
 ```markdown
-### 2.X flush-daily-stats（每日 {time} 聚合）
+### 2.X `{periodic-aggregate-task-A}`（每日 {time} 聚合）
 
 **目标**：将 Redis 中的 `{stats-key}:*` 聚合数据写入 MySQL `{example_table_stats}` 表。
 
-**触发**：cobra 子命令，外部调度平台每日 {time} 执行 `go run main.go flush-daily-stats`。
+**触发**：cobra 子命令，外部调度平台每日 {time} 执行 `go run main.go {periodic-aggregate-task-A}`。
 
 **并行策略**：单进程外部调度。如多进程并发，依赖 {stats-key}:dirty Set 的 SPOP 弹出避免重复。
 
 **Service 方法**：
 
 \`\`\`go
-// service/{module-3}/flush_daily.go
-func FlushDailyStats(ctx *gin.Context) error
+// service/{module-N}/{aggregate-file}.go
+func {AggregateMethod-A}(ctx *gin.Context) error
 \`\`\`
 
 **执行流程**（步骤伪码）：
 
 1. SMEMBERS `{stats-key}:dirty` → 取得待 flush 的 (entityId, actionId, date) 列表
 2. 对每个 entry：
-   - HGETALL `{stats-key}:{entityId}:{actionId}:{date}` → 取得 total_count / counted_count / success_count / total_amount
+   - HGETALL `{stats-key}:{entityId}:{actionId}:{date}` → 取得 {核心统计字段集（如 _count / _amount）}
    - INSERT ... ON DUPLICATE KEY UPDATE 写入 MySQL
    - SREM {stats-key}:dirty {entry}
 3. 失败的 entry 不 SREM，保留在 dirty Set 中，下次重试
@@ -140,11 +140,11 @@ func FlushDailyStats(ctx *gin.Context) error
 **Controller 入口**：
 
 \`\`\`go
-// controllers/command/flush_daily_stats.go
+// controllers/command/{periodic_aggregate_a}.go
 package command
 
-func FlushDailyStats(ctx *gin.Context, args ...string) error {
-    return {module}.FlushDailyStats(ctx)
+func {AggregateMethod-A}(ctx *gin.Context, args ...string) error {
+    return {module-N}.{AggregateMethod-A}(ctx)
 }
 \`\`\`
 
@@ -217,7 +217,7 @@ func startCycle(engine *gin.Engine) {
 func startCrontab(engine *gin.Engine) {
     c := command.InitCrontab(engine)
     c.AddFunc("0 0 2 * * *", func(ctx *gin.Context) error {  // 6 位表达式：秒 分 时 日 月 周
-        return {module}.FlushDailyStats(ctx)
+        return {module-N}.{AggregateMethod-A}(ctx)
     })
     // InitCrontab 内部已调用 c.Start()，**不要**再调用 c.Start()
 }
@@ -414,3 +414,40 @@ func startCrontab(engine *gin.Engine) {
 | 修改触发频率 | §1.2 + 对应任务详细 + 同步监控告警阈值 |
 | 删除任务 | 整节移除 + BUILD_STATUS / router 同步清理 |
 | 改变并行策略 | §7 详细 + §1.2 总表 |
+
+---
+
+## 14. 参考示例（仅示意，落地按业务替换）
+
+> ⚠️ 以下为示意，规范本体（§1-§13）已用占位符表达；落地工程时按业务语义替换占位符，不得直接照搬本节具体业务名作为规范。
+>
+> 示例服从 [`PRINCIPLES.md §12 占位符规则`](../PRINCIPLES.md#12-占位符规则强制--双轨结构) 的"参考示例段豁免"。
+
+### 14.1 §1.2 任务清单（示例：某计数 / 计费类业务）
+
+| 任务名 | 类型 | Service 方法 | 触发频率 | 并行策略 | 详细章节 |
+|-------|------|-------------|---------|---------|---------|
+| `flush-state-to-db` | cycle | `BillingService.FlushStateToDb` | 每 5min | SPOP（多进程并行安全） | §3.1 |
+| `cache-integrity-check` | cycle | `AuthService.CacheIntegrityCheck` | 每 1h | 分布式锁互斥 | §3.2 |
+| `flush-daily-stats` | cobra | `BillingService.FlushDailyStats` | 每日 00:10 | 单进程外部调度 | §2.1 |
+| `clean-expired-quota` | cobra | `BillingService.CleanExpiredQuota` | 每日 04:00 | 单进程外部调度 | §2.3 |
+
+### 14.2 §3.x flush 流程伪码（示例）
+
+```
+1. SMEMBERS stats:dirty → 取得待 flush 的 (entityId, actionId, date) 列表
+2. 对每个 entry：
+   - HGETALL stats:{entityId}:{actionId}:{date} → 取得 total_count / counted_count / success_count / total_amount
+   - INSERT ... ON DUPLICATE KEY UPDATE 写入 MySQL
+   - SREM stats:dirty {entry}
+3. 失败的 entry 不 SREM，保留在 dirty Set 中，下次重试
+```
+
+### 14.3 占位符 → 业务名 对照表（示例）
+
+| 占位符 | 本节示例值 |
+| --- | --- |
+| `{clean-expired-task}` | clean-expired-quota |
+| `{cleanup-method}` | CleanExpiredQuota |
+| `{module-N}` | BillingService |
+| `{核心统计字段集}` | total_count / counted_count / success_count / total_amount |

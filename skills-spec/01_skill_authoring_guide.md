@@ -69,7 +69,7 @@ argument-hint: <参数> 例如 ...
 
 每个代码模板必须做到：
 
-- 包名一字不差（`package billing`）
+- 包名一字不差（`package {module}`）
 - 全部 import（不能用 `...`）
 - struct 字段顺序与 docs 定义一致
 - tag（json / binding / gorm）完整
