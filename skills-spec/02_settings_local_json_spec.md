@@ -6,14 +6,16 @@
 
 ## 1. 定位
 
-`.claude/settings.local.json` 是 **项目级** Claude Code 配置：
+`.claude/settings.json`（共享 / 入 git）与 `.claude/settings.local.json`（本机 / 不入 git）是 Claude Code 的配置：
 
 - **permissions** —— 自动放行的工具调用，避免每次都要确认
-- **hooks** —— 在某些事件触发时自动执行的脚本（如 PreCommit / PostToolUse）
+- **hooks** —— 在某些事件触发时自动执行的脚本（如 PostToolUse / Stop / PreToolUse）
 - **environment** —— 环境变量
 - **disabled-skills** —— 禁用的 Skill
 
-> ⚠️ 这是 `local.json`——属于本机/项目设置，**不入版本控制**。需团队共享的设置放 `.claude/settings.json`（去掉 `.local`）。
+> ⚠️ `*.local.json` 属于本机/项目设置，**不入版本控制**。需团队共享的设置放 `.claude/settings.json`（去掉 `.local`）。
+
+> **🔒 Hooks 是规范要求（强制）**：本规范把 Hooks 机制定位为 **L0 自动化防御层**（不依赖 AI 自觉，由 Claude Code 机械执行）。§4 定义的**两类强制 Hook**（IO 铁律检查 + 代码↔文档双向同步）必须配置在**团队共享** `settings.json`（入 git）中，使全团队一致生效。原理见 [`PRINCIPLES.md §14`](../PRINCIPLES.md#14-hooks-机制l0-自动化防御--强制)。
 
 ---
 
@@ -87,9 +89,52 @@
 
 ---
 
-## 4. hooks 配置（推荐）
+## 4. hooks 机制（强制 / L0 自动化防御层）
 
-### 4.1 PostToolUse: 文档同步提醒
+> Hooks 由 Claude Code 在工具事件触发时**机械执行**，不依赖 AI 自觉，构成 L1-L5 之前的 **L0 层**。
+> 下面**两类 Hook 族是规范要求**，必须放在团队共享 `settings.json`（入 git）；§4.3 的本机便利 Hook 可放 `settings.local.json`。
+
+### 4.0 两类强制 Hook 族总览
+
+| Hook 族 | 事件 | 职责 | 关联规范 |
+| --- | --- | --- | --- |
+| **A. IO 铁律检查** | PostToolUse（编辑/写 `.go`） | 机械跑 `R-IO-*` grep 锚，命中 N+1 / 串行编排 → 告警；可升级为 PreToolUse 阻断 | [`docs-spec/25`](../docs-spec/25_io_aggregation_spec.md) |
+| **B. 代码↔文档双向同步** | PostToolUse（编辑 `.go`）+ Stop | 编辑后按范围判定表提醒同步 md；Stop 时校验"文档同步：..."声明存在 | [`PRINCIPLES.md §2`](../PRINCIPLES.md) + [`19`](../docs-spec/19_incremental_sync_spec.md) |
+
+> 脚本应放工程 `scripts/hooks/` 下，纯标准工具（grep / shell），不引入业务耦合。退出码约定：`0` 放行；非 `0` 在 PreToolUse 下阻断、在 PostToolUse/Stop 下告警。
+
+### 4.1 Hook 族 A — IO 铁律检查（强制）
+
+PostToolUse 在每次编辑 / 写入 `.go` 后，对改动文件机械跑 IO 铁律 grep 锚（与 [`docs-spec/25 §2`](../docs-spec/25_io_aggregation_spec.md) / `/io-review` 同源）：
+
+```json
+{
+  "hooks": [
+    {
+      "name": "io-iron-law-check-on-go-edit",
+      "event": "PostToolUse",
+      "matcher": { "tool": "Edit|Write", "filePathPattern": "*.go" },
+      "command": "scripts/hooks/io_iron_law_check.sh \"$CLAUDE_FILE_PATH\""
+    }
+  ]
+}
+```
+
+`scripts/hooks/io_iron_law_check.sh` 行为约定（抽象，不绑定业务）：
+
+```
+1. 对传入的 .go 文件 grep R-IO-N-PLUS-1 模式（循环体内单条 .Find/.Get/.HGet/.Call 等，key 来自循环变量）
+2. grep R-IO-LOOP-WRITE / R-IO-LOOP-RPC 模式
+3. 命中且无行末 // aiweave:allow=R-IO-* 注解、且不在 io_contract.md §2 豁免登记内
+   → 打印 🟡 告警（文件:行 + 铁律编号 + "建议走聚合器，详见 io_contract.md §3"）
+4. 退出码非 0 仅在升级为 PreToolUse 阻断模式时使用；PostToolUse 模式恒返回 0（仅告警）
+```
+
+> 升级阻断：对高纪律团队，可把铁律一（N+1）命中改为 PreToolUse + `exit 1` 直接拦截写入，强制先改批量。
+
+### 4.2 Hook 族 B — 代码↔文档双向同步（强制）
+
+#### 4.2.1 PostToolUse：编辑 `.go` 后按范围判定表提醒
 
 ```json
 {
@@ -97,17 +142,16 @@
     {
       "name": "remind-doc-sync-on-go-edit",
       "event": "PostToolUse",
-      "matcher": {
-        "tool": "Edit",
-        "filePathPattern": "*.go"
-      },
-      "command": "echo '⚠️ 注意：本次编辑了 .go 文件，请按 CLAUDE.md 范围判定表检查是否需要同步 docs/ 文件'"
+      "matcher": { "tool": "Edit|Write", "filePathPattern": "*.go" },
+      "command": "scripts/hooks/scope_hint.sh \"$CLAUDE_FILE_PATH\""
     }
   ]
 }
 ```
 
-### 4.2 Stop: 文档同步声明检查
+`scripts/hooks/scope_hint.sh`：按 CLAUDE.md 范围判定表，把改动文件路径映射到应同步的 md，打印提醒（如改 `service/` → 提醒同步 `{module}_service.md`）。
+
+#### 4.2.2 Stop：会话结束校验"文档同步声明"
 
 ```json
 {
@@ -115,15 +159,17 @@
     {
       "name": "enforce-doc-sync-statement",
       "event": "Stop",
-      "command": "scripts/check_doc_sync_statement.sh"
+      "command": "scripts/hooks/check_doc_sync_statement.sh"
     }
   ]
 }
 ```
 
-`scripts/check_doc_sync_statement.sh` 检查 AI 最近一条回复末尾是否有「文档同步：...」声明。
+`scripts/hooks/check_doc_sync_statement.sh`：检查本回合是否改过 `.go`/`docs/`；若改过但 AI 最近一条回复末尾无「文档同步：...」声明 → 打印 🔴 告警（提醒补声明再交付）。
 
-### 4.3 PreToolUse: 防止误删 docs/
+### 4.3 本机便利 Hook（可选，放 settings.local.json）
+
+防止误删 docs/：
 
 ```json
 {
@@ -131,16 +177,15 @@
     {
       "name": "prevent-docs-deletion",
       "event": "PreToolUse",
-      "matcher": {
-        "tool": "Bash",
-        "commandPattern": "rm.*docs/"
-      },
+      "matcher": { "tool": "Bash", "commandPattern": "rm.*docs/" },
       "command": "exit 1",
       "blockMessage": "禁止用 rm 直接删除 docs/ 下文件，请用 Edit 工具或显式确认"
     }
   ]
 }
 ```
+
+> 凭据安全可选 Hook：PreToolUse 拦截把含明文密码 / 密钥的配置文件 `git add` 进库（对应 [`docs-spec/26 §7.4`](../docs-spec/26_config_center_spec.md) `R-CONF-SECRET-COMMIT`），命令模式匹配 `git add` + 凭据文件名。
 
 ---
 
@@ -219,10 +264,10 @@
 
 | 文件 | 用途 | 入 git |
 |------|------|--------|
-| `.claude/settings.json` | 团队共享配置（hooks 强制项 / 通用 permissions） | ✅ |
-| `.claude/settings.local.json` | 本机偏好（个人 env / 调试 hooks） | ❌（应在 .gitignore） |
+| `.claude/settings.json` | 团队共享配置：**§4.1 / §4.2 两类强制 Hook 族**（IO 铁律 + 双向同步）+ 通用 permissions | ✅ |
+| `.claude/settings.local.json` | 本机偏好（个人 env / §4.3 调试 hooks） | ❌（应在 .gitignore） |
 
-通常项目模板下只放 `settings.local.json` 示例（本规范模板就是如此），团队级 `settings.json` 由各项目自行决定。
+> **强制**：§4 的两类 Hook 族（A IO 铁律 / B 双向同步）属于团队级强制规则，**必须放共享 `settings.json` 并入 git**，确保全员一致生效——这是它们作为 L0 防御层的前提。§4.3 本机便利 Hook 放 `settings.local.json`。
 
 ---
 

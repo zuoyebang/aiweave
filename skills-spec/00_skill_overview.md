@@ -20,7 +20,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 
 ---
 
-## 2. Skill 体系全景（17 个 Skill / 4 类分组）
+## 2. Skill 体系全景（18 个 Skill / 4 类分组）
 
 > 设计意图：`doc-sync-check` 审计的是"代码 ↔ 文档一致性"；其他审计类 Skill 审计的是"代码 ↔ 约束一致性"。两者维度不同，互补不替代——前者保证可重建（AIWeave 第一性目标），后者保证运行时正确。
 
@@ -42,11 +42,12 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 │  update-index         自动更新 INDEX.md                           │
 │  sync-feature-to-docs 增量需求同步：代码改动反向更新到全链路文档    │
 │                                                                  │
-├─── 审计类 5 个 ────────────────────────────────────────────────┤
+├─── 审计类 6 个 ────────────────────────────────────────────────┤
 │                                                                  │
 │  doc-sync-check          审计 代码 ↔ 文档 一致性                  │
 │  concurrency-review      审计 代码 ↔ 并发安全约束                 │
 │  performance-review      审计 代码 ↔ 性能合约约束                 │
+│  io-review               审计 代码 ↔ IO 铁律（N+1/串行编排）      │
 │  domain-invariant-check  审计 代码 ↔ 领域不变量约束               │
 │  failure-path-review     审计 失败路径全景图覆盖完整性            │
 │                                                                  │
@@ -65,7 +66,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 - **审计类**不生成代码，只检查一致性（B 模式 / 发版前兜底）
 - **终极类**专用于代码丢失或换技术栈时从 docs 全量重建（A2 模式）
 
-**为什么审计类有 5 个**：
+**为什么审计类有 6 个**：
 
 每个审计类 Skill 对应一个维度的"一致性"：
 
@@ -74,10 +75,11 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 | `doc-sync-check` | 代码 ↔ 文档 | 全部 docs-spec |
 | `concurrency-review` | 代码 ↔ 并发安全约束 | docs-spec/20 |
 | `performance-review` | 代码 ↔ 性能合约约束 | docs-spec/22 |
+| `io-review` | 代码 ↔ IO 铁律（N+1 / 串行编排 / 聚合并行） | docs-spec/25 |
 | `domain-invariant-check` | 代码 ↔ 领域不变量 | docs-spec/09 §7 |
 | `failure-path-review` | 失败路径文档 / 测试 覆盖 | docs-spec/21 §6 + 24 §4 |
 
-5 个审计类 Skill 共同构成"L4 审计层"防御（见 OPERATIONS.md 附录 "5 层防御 × W 工作流对照表"）。
+6 个审计类 Skill 共同构成"L4 审计层"防御（见 OPERATIONS.md 附录 "6 层防御 × W 工作流对照表"）。`io-review` 与 `performance-review` 维度互补：22/perf 管单次延迟，25/io 管往返次数与并行化。
 
 ---
 
@@ -226,4 +228,4 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 |------|------|
 | `aiweave/skills-spec/01_skill_authoring_guide.md` | 编写 Skill 的标准结构与最佳实践 |
 | `aiweave/skills-spec/02_settings_local_json_spec.md` | settings.local.json 的 permissions / hooks 配置 |
-| `aiweave/templates/skills/{name}/SKILL.md` | 17 个 Skill 的可执行骨架（同时充当规范文档；公共章节真相源在 01_skill_authoring_guide.md §A-§E） |
+| `aiweave/templates/skills/{name}/SKILL.md` | 18 个 Skill 的可执行骨架（同时充当规范文档；公共章节真相源在 01_skill_authoring_guide.md §A-§E） |

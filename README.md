@@ -1,13 +1,13 @@
 # AIWeave — Go 后端工程「AI 原生 + AI 可重建」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.2-green.svg)](INDEX.md#变更日志)
-[![docs-spec](https://img.shields.io/badge/docs--spec-25-informational.svg)](docs-spec/)
-[![skills](https://img.shields.io/badge/skills-17-informational.svg)](templates/skills/)
+[![Version](https://img.shields.io/badge/version-v1.3-green.svg)](INDEX.md#变更日志)
+[![docs-spec](https://img.shields.io/badge/docs--spec-27-informational.svg)](docs-spec/)
+[![skills](https://img.shields.io/badge/skills-18-informational.svg)](templates/skills/)
 [![Author](https://img.shields.io/badge/author-XuRuibo-orange.svg)](#10-作者与联系方式)
 
 > **作者**：XuRuibo &lt;hustxurb@163.com&gt;
-> 版本：v1.2 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
+> 版本：v1.3 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
 > 目标读者：项目架构师、AI Agent（Claude Code 等）
 
 **AIWeave**（AI 编织）—— 名字呼应规范的两面：
@@ -143,14 +143,16 @@ aiweave/
 │   ├── 21_distributed_transaction_spec.md   # 分布式事务与补偿设计
 │   ├── 22_performance_contract_spec.md      # 性能合约与热路径
 │   ├── 23_observability_spec.md             # 可观测性（Metrics 限服务级）
-│   └── 24_cross_service_contract_spec.md    # 跨服务合约
+│   ├── 24_cross_service_contract_spec.md    # 跨服务合约
+│   ├── 25_io_aggregation_spec.md            # IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止串行编排）
+│   └── 26_config_center_spec.md             # 配置中心与凭据加密（配置上云 + 密钥不入库 + fail-fast）
 │
 ├── skills-spec/             # .claude/skills/ 的规范
 │   ├── 00_skill_overview.md         # Skill 体系总览（频率、命名、调用顺序）
 │   ├── 01_skill_authoring_guide.md  # 编写指南（frontmatter / 步骤化 / 文档同步 / 测试同步）
-│   ├── 02_settings_local_json_spec.md  # settings.local.json 规范（permissions/hooks）
+│   ├── 02_settings_local_json_spec.md  # settings 规范（permissions + Hooks 强制机制：IO 铁律 + 双向同步）
 │
-├── OPERATIONS.md            # 操作手册（8 类工作流 + 3 类自检清单 + 增量同步专属 + 5 层防御×W 工作流对照表）
+├── OPERATIONS.md            # 操作手册（8 类工作流 + 3 类自检清单 + 增量同步专属 + 6 层防御×W 工作流对照表，含 L0 Hooks）
 │
 └── templates/               # 可直接复制到新项目的骨架
     ├── CLAUDE.md
@@ -166,8 +168,8 @@ aiweave/
     │   ├── cache/
     │   ├── circuit_breaker/
     │   └── testing/
-    └── skills/              # 17 个 .claude/skills/{name}/SKILL.md 骨架
-                             # 4 类分组：创建 9 / 维护 2 / 审计 5 / 终极 1
+    └── skills/              # 18 个 .claude/skills/{name}/SKILL.md 骨架
+                             # 4 类分组：创建 9 / 维护 2 / 审计 6 / 终极 1
 ```
 
 ---

@@ -111,6 +111,8 @@
 | `[LOCK-ACQUIRE: {lock-name}]` / `[LOCK-RELEASE]` | 锁 | 🟢 |
 | `[HOT-PATH]` | 热路径 | 🟢 |
 | `[METRIC-EMIT: name{labels}]` | 指标 | 🟢 |
+| `[BATCH]` | IO 聚合：循环外批量读 / 写（消灭 N+1） | 🟢 |
+| `[PARALLEL]` | IO 并行：聚合器 / 扇出并行编排（消灭串行） | 🟢 |
 
 详细使用规则见 [`aiweave/docs-spec/09 §10.5`](../../../aiweave/docs-spec/09_service_design_spec.md)。
 
@@ -171,6 +173,25 @@
 | 数据规模 | [`runtime_profile.md §2`](runtime_profile.md) | ⬜ / 🟢 视工程启用 |
 | 资源消耗基线 | [`runtime_profile.md §3`](runtime_profile.md) | ⬜ / 🟢 视工程启用 |
 | 关键超时链 | [`runtime_profile.md §4`](runtime_profile.md) | ⬜ / 🟢 视工程启用 |
+
+### 8.11 IO 铁律与聚合约束（v1.3）
+
+| 约束类 | 文档锚点 | 状态 |
+|--------|---------|------|
+| 两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）+ 豁免登记 | [`io_contract.md §2`](io_contract.md) | 🟢 |
+| 聚合器模式（收集→批量读→并行回源→单飞→异步写回） | [`io_contract.md §3`](io_contract.md) | 🟢 |
+| 并行编排原语（聚合器 / 扇出 / 流水线） | [`io_contract.md §4`](io_contract.md) | 🟢 |
+| 数据访问聚合约束（批量读写 / 预加载 map / JOIN vs 多查询） | [`io_contract.md §5`](io_contract.md) | 🟢 |
+| IO 往返预算 + IO 回归测试（计数断言无 N+1） | [`io_contract.md §1`](io_contract.md) + [`§7`](io_contract.md) | 🟢 |
+
+### 8.12 配置中心与凭据加密约束（v1.3 / 如启用配置上云）
+
+| 约束类 | 文档锚点 | 状态 |
+|--------|---------|------|
+| 配置上云权威源矩阵 | [`config.md §6`](config.md) | ⬜ / 🟢 视工程启用 |
+| 配置中心 Client 抽象 + 拉取落盘编排 | [`config.md §7`](config.md) | ⬜ / 🟢 视工程启用 |
+| 凭据对称加密（密钥应用层持有 / 不入库 / 轮换） | [`config.md §8`](config.md) | ⬜ / 🟢 视工程启用 |
+| 启动期 fail-fast 加载时序 | [`config.md §9`](config.md) | ⬜ / 🟢 视工程启用 |
 
 > 运行时基线属于"AI 不直接感知"维度，启用与否由工程负责人决定（详见 INDEX.md §0 采纳进度）。
 
@@ -255,8 +276,28 @@
 | `R-FAIL-PATH-NO-TEST` | 失败分支 (F-N) 无对应测试用例 | 由 `failure-path-review` 扫描 test/cases/ | 🟢 |
 | `R-FAIL-PATH-WEAK-ASSERT` | 测试用例仅断言 `err != nil` 未断言 errNo / 副作用 | 由 `failure-path-review` 扫描断言模式 | 🟢 |
 
-### 10.7 规则维护
+### 10.7 IO 铁律类（v1.3 新增 / 由 `io-review` 触发）
 
-- 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` Skill 实现 grep 模式
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-IO-N-PLUS-1` | 铁律一：循环内单条查询（N+1） | `for [^{]*\{[\s\S]{0,300}?\.(Find\|First\|Take\|Get\|HGet\|Call)\(` | 批量 API（In/Pluck/Scan/MGET）/ 循环次数硬编码 ≤ 5 / io_contract.md §2.1 登记 | 🟢 |
+| `R-IO-SERIAL-ORCH` | 铁律二：独立读串行编排（无数据依赖） | 连续 ≥ 2 个独立读串行展开（结合依赖链分析） | 真实依赖链（后查询入参取自前查询结果）/ io_contract.md §2.2 登记 | 🟢 |
+| `R-IO-LOOP-WRITE` | 循环内单条写 | `for [^{]*\{[\s\S]{0,300}?\.(Create\|Save\|Insert\|HSet\|Exec)\(` | 批量写 / pipeline / 循环次数 ≤ 5 | 🟢 |
+| `R-IO-NO-AGGREGATOR` | 多次跨实例读未走聚合器 | 同函数 ≥ N 次跨实例 / 跨表读未聚合 | 已用聚合器（Preload/Fetch） | 🟢 |
+| `R-IO-LOOP-RPC` | 循环内单条 RPC / 外部调用 | `for [^{]*\{[\s\S]{0,300}?\.(Call\|Invoke\|Do)\(` 命中 api/ | 批量接口 / 并行扇出 | 🟢 |
+| `R-IO-SHARED-MUTATE` | 就地修改 single-flight / Slot 共享指针字段 | `\.Value\(\)` 后对返回指针字段赋值 | 已深拷贝 | 🟢 |
+
+### 10.8 配置安全类（v1.3 新增 / 由 `doc-sync-check` 触发）
+
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-CONF-PLAINTEXT-CRED` | 配置中心 / 资源凭据明文落盘或入库 | 配置文件中 `password:` / `secret:` 后非密文（非 Base64 / 非 `@@`） | 占位符 `@@key` / 已是密文 | 🟢 |
+| `R-CONF-HARDCODE-SECRET` | 密钥 / 密码硬编码在代码 | 源码含字面量 `key := "..."` / `password := "..."`（长度 ≥ 16 的字面量） | 测试 fixture / 从环境读取 | 🟢 |
+| `R-CONF-SECRET-COMMIT` | 含密钥 / 明文凭据的文件入 git | git diff 含密钥文件且不在 `.gitignore` | — | 🟢 |
+| `R-CONF-NO-FAILFAST` | 配置中心拉取失败未 fail-fast | 拉取调用后 `if err != nil` 分支无 `panic` / `os.Exit` / `Fatal` / `return err`（启动期） | 非启动期 / 有降级设计且已登记 | 🟢 |
+
+### 10.9 规则维护
+
+- 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）
 - 长期 0 命中的规则 → 评估是否仍有价值；可降级为"可选规则"

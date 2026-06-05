@@ -69,13 +69,14 @@ overview.md 必须按以下章节顺序组织：
 
 ### 2.1 章节结构（强制）
 
-config.md 必须按以下章节顺序组织：
+config.md 必须按以下章节顺序组织（§1-§5 由本规范治理；§6-§9 配置上云 / 凭据加密由 [`docs-spec/26`](26_config_center_spec.md) 治理）：
 
 - `## 1.` 配置文件分类（mount/ 环境相关 + app/ 业务相关）
 - `## 2.` 配置文件清单（每个 yaml/json：文件名 / 内容范围 / 何时修改）
 - `## 3.` 加载流程（PreInit → InitConf → 资源初始化 的代码路径与时序）
 - `## 4.` 占位机制（如 `@@key` 格式，由配置中心运行时替换）
 - `## 5.` Go 结构体映射（每个 yaml 节点 → Go struct 字段）
+- `## 6.~9.` 配置上云 / 配置中心集成 / 凭据加密 / 启动加载时序 —— **详见 [`docs-spec/26_config_center_spec.md`](26_config_center_spec.md)**（启用配置上云时强制）
 
 > **完整章节骨架见** [`templates/docs/architecture/config.md`](../templates/docs/architecture/config.md)。
 
@@ -84,7 +85,7 @@ config.md 必须按以下章节顺序组织：
 - 列出**所有**配置文件，无遗漏
 - 列出每个 yaml 节点对应的 Go struct（如 `TApi`、`TResource`）
 - 敏感信息占位机制
-- 配置中心集成方式（如有）
+- **配置上云 / 配置中心集成 / 凭据加密**（如启用）—— 本规范只承载 §1-§5；这部分的真相源是 [`docs-spec/26`](26_config_center_spec.md)，§2 此处仅引用不展开（双源真相规避）
 
 ---
 

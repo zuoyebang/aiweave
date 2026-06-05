@@ -175,6 +175,17 @@ tlog.Infof(ctx, "task completed: %s, processed=%d", taskName, count)
 **级别判定**：能自愈 → WARN；需人工介入 → ERROR。
 **敏感数据禁止打印**：EntitySecret、Token、密码绝对不输出到日志。
 
+### Hooks 机制（强制 / L0 自动化防御层）
+
+本项目通过 `.claude/settings.json`（团队共享，入 git）配置**两类强制 Hook**，由 Claude Code 在工具事件机械执行，不依赖 AI 自觉：
+
+| Hook 族 | 事件 | 职责 |
+|--------|------|------|
+| **IO 铁律检查** | 编辑/写 `.go` 后 | 跑 `R-IO-*` grep 锚，命中 N+1 / 串行编排 → 告警（可升级 PreToolUse 阻断） |
+| **代码↔文档双向同步** | 编辑 `.go` 后 + 会话 Stop | 按范围判定表提醒同步 md；Stop 校验"文档同步：..."声明存在 |
+
+Hook 脚本在 `scripts/hooks/`，纯标准工具实现。配置规范见 `aiweave/skills-spec/02_settings_local_json_spec.md §4`。Hooks 是 6 层防御的 L0 层，与下方文档同步规则（L1-L5）叠加生效。
+
 ## 文档同步规则（强制）
 
 > **本规则是本项目的最高优先级纪律，优先级高于一切其他开发规范。任何不满足文档同步的交付都视为未完成，必须补齐后才能结束。**
@@ -200,7 +211,7 @@ tlog.Infof(ctx, "task completed: %s, processed=%d", taskName, count)
 | **新增代码** | 必须新建/更新对应 md，并在 INDEX.md 登记 |
 | **删除代码** | 必须同步删除/更新对应 md，并更新 INDEX.md |
 
-### 9 条具体执行规则
+### 18 条具体执行规则
 
 #### 规则 1：修改代码前 — 查找关联文档
 按下方"范围判定表"逐条检查，确认本次修改涉及哪些 md。
@@ -292,6 +303,25 @@ md 与代码冲突时按规则 7 处理。
 - 下游调用必须显式设超时（禁止 0 或缺省）；本服务对下游设的超时必须 < 上游对本服务的超时（防级联）
 - 禁止 `_ = downstream.Call()` 静默吞下游错误；每条失败分支必须在 `cross_service_contract.md §4` 故障传播矩阵覆盖
 
+#### 规则 17：IO 聚合约束（强制 / 两条 IO 铁律）
+
+- **铁律一（禁止 N+1）**：禁止在循环 / 递归内对同类资源逐条查询（DB / 缓存 / RPC / 外部 API）→ 必须循环外收集 key + 一次批量读 + `map` 装配
+- **铁律二（禁止独立串行编排）**：多个**互不依赖**的 IO 禁止逐个串行 await → 必须聚合器或扇出并行；仅当后查询入参真实依赖前查询结果时串行才合法
+- 多次跨实例 / 跨数据源读 → 必须走聚合器（按实例分组批量 + 并行回源 + 单飞合并 + 异步写回）
+- 聚合器 / single-flight 的共享结果指针 **只读**，禁止就地改字段（并发写竞争）→ 需改先深拷贝
+- 循环内单条写 → 必须批量 / pipeline
+- 新增"集合访问资源 / 多依赖编排"方法 → 必须在 `io_contract.md §1` 登记往返预算、`§3/§4` 登记原语，伪码加 `[BATCH]` / `[PARALLEL]` 标记
+- 拿不准是否构成 N+1 / 伪串行 → 主动报告并建议聚合方案，不擅自串行
+
+#### 规则 18：配置中心与凭据加密约束（强制）
+
+- 配置中心 / 资源连接凭据（账号 / 密码）→ 必须密文存放（对称加密，如 AES-256-GCM），**禁止明文**落盘 / 入库
+- 加密密钥 → 必须由应用层 / 环境注入，**禁止硬编码、禁止入 git**；框架库不内置密钥
+- 环境相关配置以**配置中心为权威源**，本地文件是启动期落盘副本；按 `config.md §5` 权威源矩阵归位，不混放业务 / 环境 / 凭据
+- 新增配置中心拉取项 → 登记 `config.md §7.3` 拉取映射；拉取失败 / 空内容 → 必须 **fail-fast**（禁止静默空/旧配置启动）
+- 接入新配置中心 → 实现 `config.md §7.1` Client 接口，网络调用只在实现层
+- 出现明文凭据 / 硬编码密钥 → 主动报告，拒绝提交
+
 ### 危险模式清单
 
 > AI 生成代码前/后必查。命中以下模式 → 停下来确认或修正。
@@ -325,6 +355,15 @@ md 与代码冲突时按规则 7 处理。
 | **代码失败分支未在 transaction_design.md §6 失败路径全景图覆盖** | 漏路径无据可查 | 先补 §6 再合并 | `R-FAIL-PATH-UNDOC` |
 | **失败分支无对应测试用例** | 静默回归 | 按 `testing_design.md §5.5` 高级用例 3 类补齐 | `R-FAIL-PATH-NO-TEST` |
 | **伪码 `[INVARIANT-CHECK]` 标记与代码实现脱节** | 不变量声明虚化 | 修正标记或修正代码 | `R-INVARIANT-MARK-MISMATCH` |
+| **【铁律一】循环内单条查询（DB/缓存/RPC）** | N+1，IO 放大 O(N) | 批量读 + map 装配 | `R-IO-N-PLUS-1` |
+| **【铁律二】独立读串行编排（无数据依赖）** | RTT 累加，本可并行 | 聚合器 / 扇出并行 | `R-IO-SERIAL-ORCH` |
+| **循环内单条写** | 写放大 | 批量写 / pipeline | `R-IO-LOOP-WRITE` |
+| **多次跨实例读未走聚合器** | 往返失控 | 按实例分组批量 | `R-IO-NO-AGGREGATOR` |
+| **就地修改 single-flight / Slot 共享指针字段** | 并发写竞争 | 只读；改前深拷贝 | `R-IO-SHARED-MUTATE` |
+| **配置中心 / 资源凭据明文落盘或入库** | 凭据泄漏 | 对称加密密文存放 | `R-CONF-PLAINTEXT-CRED` |
+| **加密密钥 / 密码硬编码在代码** | 密钥泄漏 | 应用层 / 环境注入 | `R-CONF-HARDCODE-SECRET` |
+| **含密钥 / 明文凭据的文件入 git** | 仓库泄密 | `.gitignore` + 环境注入 | `R-CONF-SECRET-COMMIT` |
+| **配置中心拉取失败未 fail-fast** | 空/旧配置静默启动 | 拉取失败即终止进程 | `R-CONF-NO-FAILFAST` |
 
 ### 范围判定表
 
@@ -368,6 +407,9 @@ md 与代码冲突时按规则 7 处理。
 | **提交说明含 `refactor:` 前缀且改动 ≥ 100 行** | `docs/architecture/mvp_rebuild_path.md` §11 安全重构方法论 + §11.5.4 灰度切流量 |
 | **`api/` 目录新增 client / `pkg/` 引入新 RPC 包** | `docs/architecture/cross_service_contract.md` §3 下游合约 |
 | **新增 server 端路由被外部调用方接入 / 修改对外接口字段** | `docs/architecture/cross_service_contract.md` §2 上游合约 + §5 接口版本管理 |
+| **【铁律】循环内单条查询/写/RPC、独立读串行编排、聚合器/扇出并行/批量读新增** | `docs/architecture/io_contract.md` §2 铁律豁免 + §3 聚合器 + §4 原语 + §1 往返预算 |
+| **`helpers/{aggregator}/` 聚合器 / `single-flight` / worker pool 新增** | `docs/architecture/io_contract.md` §3 / §4 / §6（与 concurrency_safety.md §1.1 对齐） |
+| **`conf/` 凭据字段 / `Encrypt`·`Decrypt` / 配置中心 `Client`·`Sync` / 拉取映射新增** | `docs/architecture/config.md` §6-§9（配置上云 / 凭据加密，详见 docs-spec/26） |
 
 ### 输出格式
 

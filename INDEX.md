@@ -16,6 +16,9 @@
 | `docs-spec/22_performance_contract` 性能合约 | 🟢 / 🟡 / ⬜ / 🚫 | — | 推荐启用 |
 | `docs-spec/23_observability` 可观测性（Metrics） | 🟢 / 🟡 / ⬜ / 🚫 | — | 推荐启用 |
 | `docs-spec/24_cross_service_contract` 跨服务合约 | 🟢 / 🟡 / ⬜ / 🚫 | — | 单体服务可标 🚫 |
+| `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（两条 IO 铁律） |
+| `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
+| Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
 
@@ -24,8 +27,8 @@
 | 工程复杂度 | 推荐启用集 |
 | --- | --- |
 | **简单 CRUD / 内部工具服务** | 基础规范 + 20 §2 共享状态注册表 + 09 §7 领域不变量 + CLAUDE.md 危险模式清单 |
-| **生产服务常态（推荐起点）** | 基础规范 + 20 + 21 + 22 §2 热路径 + 23 + 18 §11 安全重构 + 审计 Skill `concurrency-review` / `domain-invariant-check` |
-| **高并发 / 分布式核心** | 全部启用（含 24 + runtime_profile + 全部审计 Skill + §11 演进效果度量） |
+| **生产服务常态（推荐起点）** | 基础规范 + 20 + 21 + 22 §2 热路径 + 23 + 25 IO 铁律 + Hooks（L0）+ 18 §11 安全重构 + 审计 Skill `concurrency-review` / `io-review` / `domain-invariant-check` |
+| **高并发 / 分布式核心** | 全部启用（含 24 + 25 + 26 + runtime_profile + Hooks + 全部审计 Skill + §11 演进效果度量） |
 
 ### 0.3 状态语义
 
@@ -46,7 +49,7 @@
 
 ## docs-spec/ —— `docs/` 目录的规范
 
-编号 00-24，覆盖一个 Go 后端工程所需的全部设计视角，并支持"建设模式 + 增量同步模式"两种使用方式。
+编号 00-26，覆盖一个 Go 后端工程所需的全部设计视角，并支持"建设模式 + 增量同步模式"两种使用方式。
 
 | 序号 | 规范 | 对应 docs/ 路径 | 说明 |
 |------|------|---------------|------|
@@ -75,6 +78,8 @@
 | 22 | [docs-spec/22_performance_contract_spec.md](docs-spec/22_performance_contract_spec.md) | docs/architecture/performance_contract.md | **性能合约与热路径规范**：全局 SLA / 热路径标注 / 内存预算 / 数据访问约束 / 背压策略 / 性能回归测试 / 与 12 边界划分 + B1 反向同步规则 |
 | 23 | [docs-spec/23_observability_spec.md](docs-spec/23_observability_spec.md) | docs/architecture/observability.md | **可观测性规范（Metrics 限服务级）**：仅服务级基础指标 / Cardinality 控制 / Label 禁止清单 / 告警规则 / 与 13 边界划分 + B1 反向同步规则 |
 | 24 | [docs-spec/24_cross_service_contract_spec.md](docs-spec/24_cross_service_contract_spec.md) | docs/architecture/cross_service_contract.md | **跨服务合约规范**：上下游依赖图 / 上游合约 / 下游合约 / 故障传播矩阵 / 接口版本管理 + B1 反向同步规则 |
+| 25 | [docs-spec/25_io_aggregation_spec.md](docs-spec/25_io_aggregation_spec.md) | docs/architecture/io_contract.md | **IO 极致与聚合并行规范**：两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）/ 聚合器模式（收集→批量读→并行回源→单飞→异步写回）/ 并行编排原语 / 数据访问聚合约束 / IO 往返预算 / IO 回归测试 + B1 反向同步规则 |
+| 26 | [docs-spec/26_config_center_spec.md](docs-spec/26_config_center_spec.md) | docs/architecture/config.md §6-§9 | **配置中心与凭据加密规范**：配置上云权威源模型 / 配置中心 Client 抽象与拉取落盘编排 / 凭据对称加密（密钥应用层持有不入库）/ 启动期 fail-fast 加载时序（治理 config.md §6-§9，与 04 §2 边界划分） |
 
 ## skills-spec/ —— `.claude/skills/` 的规范
 
@@ -84,7 +89,7 @@
 | [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) | Skill 编写指南：frontmatter / 步骤化结构 / 文档同步 / 测试同步 / 验证 |
 | [skills-spec/02_settings_local_json_spec.md](skills-spec/02_settings_local_json_spec.md) | settings.local.json 规范：permissions / hooks / 推荐配置 |
 
-`templates/skills/{name}/SKILL.md` 是 **17 个** Skill 的可执行骨架（每个 SKILL.md 同时充当规范与可复制的执行手册；公共章节真相源在 [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) §A-§E）：
+`templates/skills/{name}/SKILL.md` 是 **18 个** Skill 的可执行骨架（每个 SKILL.md 同时充当规范与可复制的执行手册；公共章节真相源在 [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) §A-§E）：
 
 | Skill | 骨架文件 |
 |-------|----------|
@@ -102,6 +107,7 @@
 | sync-feature-to-docs | [templates/skills/sync-feature-to-docs/SKILL.md](templates/skills/sync-feature-to-docs/SKILL.md) — **B1 增量同步核心 Skill** |
 | concurrency-review | [templates/skills/concurrency-review/SKILL.md](templates/skills/concurrency-review/SKILL.md) — 审计代码 ↔ 并发安全约束一致性 |
 | performance-review | [templates/skills/performance-review/SKILL.md](templates/skills/performance-review/SKILL.md) — 审计代码 ↔ 性能合约约束一致性 |
+| io-review | [templates/skills/io-review/SKILL.md](templates/skills/io-review/SKILL.md) — 审计代码 ↔ IO 铁律（N+1 / 串行编排 / 聚合并行）一致性 |
 | new-saga-step | [templates/skills/new-saga-step/SKILL.md](templates/skills/new-saga-step/SKILL.md) — 生成 Saga 步骤代码 + 补偿 + 幂等 Key |
 | domain-invariant-check | [templates/skills/domain-invariant-check/SKILL.md](templates/skills/domain-invariant-check/SKILL.md) — 审计代码 ↔ 领域不变量约束一致性 |
 | failure-path-review | [templates/skills/failure-path-review/SKILL.md](templates/skills/failure-path-review/SKILL.md) — 审计失败路径文档 / 测试覆盖完整性 |
@@ -112,7 +118,7 @@
 |------|------|
 | [templates/CLAUDE.md](templates/CLAUDE.md) | 项目根 CLAUDE.md 骨架，复制到新项目根目录后填空即可 |
 | [templates/docs/](templates/docs/) | 完整 docs/ 骨架（每篇 md 含目录结构 + 待填字段） |
-| [templates/skills/](templates/skills/) | 17 个 .claude/skills/{name}/SKILL.md 骨架（4 类分组：创建 9 / 维护 2 / 审计 5 / 终极 1） |
+| [templates/skills/](templates/skills/) | 18 个 .claude/skills/{name}/SKILL.md 骨架（4 类分组：创建 9 / 维护 2 / 审计 6 / 终极 1） |
 
 ---
 
@@ -122,5 +128,6 @@
 
 | 日期 | 变更 | 触发事件 |
 |------|------|---------|
+| 2026-06-05 | v1.3 演进：IO 极致 + Hooks 机制 + 配置上云 | 落地"IO 极致"诉求与 AI 工程化标准强化：<br>**新增规范**：docs-spec/25 IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止独立串行编排；聚合器模式：收集→批量读→并行回源→单飞→异步写回；并行编排原语；IO 往返预算；IO 回归测试）/ docs-spec/26 配置中心与凭据加密（配置上云权威源模型 / Client 抽象拉取落盘编排 / 对称加密密钥应用层持有不入库 / 启动 fail-fast 时序）<br>**新增 Skill**：io-review（审计 代码 ↔ IO 铁律，审计类 5→6）<br>**新增模板**：templates/docs/architecture/io_contract.md；config.md 扩展 §6-§9<br>**Hooks 升级为强制规范**：skills-spec/02 §4 两类强制 Hook 族（IO 铁律检查 + 代码↔文档双向同步）放团队共享 settings.json；新增 L0 自动化防御层<br>**机制完善**：PRINCIPLES §13 IO 铁律 + §14 Hooks 机制；CLAUDE.md 规则 17 IO 聚合 + 规则 18 配置凭据 + 危险模式 R-IO-* / R-CONF-* + 范围判定表 3 行 + Hooks 子节；OPERATIONS 5 层防御→6 层（+L0）+ B1 清单 18→21 项；04 §2 ↔ 26 边界划分<br>**体系升级**：docs-spec 25→27 篇（00-26）；Skill 17→18 个 |
 | 2026-05-15 | 初版发布（v1.0） | 从真实工程实践抽象沉淀；19 篇 docs-spec + 12 个 Skill |
 | 2026-05-25 | v1.2 演进完整落地 | 按 `tc-md/aiweave-evolution-proposal.md` v1.2 推进，完整覆盖 15 项后端复杂系统痛点：<br>**新增规范**：docs-spec/20 并发安全 / 21 分布式事务 / 22 性能合约 / 23 可观测性 / 24 跨服务合约<br>**新增 Skill**：concurrency-review / performance-review / new-saga-step / domain-invariant-check / failure-path-review<br>**结构增强**：09 §7 领域不变量 + §4.N.8 事务一致性 + §10.5 伪码标记统一语法；02 §11 约束清单状态轨道 + §12 运行时基线区域；05 §8 字段演进；17 §4.7-§4.9 故障注入/并发/性能测试 framework + §5.5 高级用例；18 §11 安全重构方法论 + §11.5.4 灰度切流量；19 范围判定表扩展<br>**机制完善**：CLAUDE.md 16 条规则 + 危险模式清单（含 grep 锚）；ai_dev_guide.md 约束总清单 + 约束突破登记表 + grep 锚 rule-id 索引；OPERATIONS 第三部分 18 项 + 附录"5 层防御 × W 工作流对照表"；INDEX.md §0 采纳进度<br>**边界划分**：12 ↔ 22 / 13 ↔ 23<br>**体系升级**：Skill 体系 12 → 17，3 类分组 → 4 类分组（创建 / 维护 / 审计 / 终极） |

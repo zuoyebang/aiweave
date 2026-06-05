@@ -258,6 +258,8 @@ type {Method-N}Resp struct {
 | `[LOCK-ACQUIRE: {lock-name}]` / `[LOCK-RELEASE: {lock-name}]` | 加锁 / 释放（涉及多锁时强制） | [`docs-spec/20 §3`](20_concurrency_safety_spec.md) |
 | `[HOT-PATH]` | 此方法属热路径，需应用性能约束 | 22_performance_contract |
 | `[METRIC-EMIT: name{labels}]` | 此步发出指标 | 23_observability |
+| `[BATCH]` | 此步为循环外批量读 / 写（消灭 N+1，铁律一） | [`docs-spec/25 §5`](25_io_aggregation_spec.md) |
+| `[PARALLEL]` | 此步为聚合器 / 扇出并行编排（消灭串行，铁律二） | [`docs-spec/25 §3`](25_io_aggregation_spec.md) §4 |
 
 ### 10.5.1 标记使用规则
 

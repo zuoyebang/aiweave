@@ -278,6 +278,9 @@ Step 6：输出
 ```
 Step 1：跑 /doc-sync-check all
         - 输出 7 个维度的差异报告
+        - 按工程启用的约束类规范，并行跑审计 Skill：
+          concurrency-review / performance-review / io-review /
+          domain-invariant-check / failure-path-review
 
 Step 2：分类处理
         - 🔴 严重（代码有但文档完全缺失）→ 立即补 md
@@ -482,9 +485,18 @@ W8 定期审计 — 跨组（兜底机制）
   - [ ] 18. 伪码使用 [HOT-PATH] / [METRIC-EMIT] 标记的，对应代码实现真的执行了
          该动作（避免标记与实现脱节）
 
+  **IO 铁律 / 配置安全 3 项（v1.3）：**
+  - [ ] 19. 无循环内单条查询/写/RPC（铁律一 N+1）；无独立读串行编排（铁律二）；
+         命中 → 改聚合器/扇出，或在 io_contract.md §2.1/§2.2 登记豁免（真实依赖链）
+  - [ ] 20. 新增"集合访问 / 多依赖编排"方法在 io_contract.md §1 往返预算 + §3/§4 原语
+         清单登记；聚合器 / single-flight 共享指针未被就地修改（只读）
+  - [ ] 21. 配置中心 / 资源凭据为密文（非明文）；密钥未硬编码 / 未入 git；新增拉取项在
+         config.md §7.3 登记且失败 fail-fast（命中 R-CONF-* → 拒绝合并）
+
 - [ ] 测试用例覆盖检查（每个新接口 4 类用例 + 涉及并发的需 `go test -race` 通过 +
       涉及热路径的需 `go test -bench` 比对基线 + 涉及多数据源写入的需故障注入覆盖
-      transaction_design.md §6 失败路径全景图分支）
+      transaction_design.md §6 失败路径全景图分支 + 涉及"集合访问"的需 IO 计数断言
+      证明无 N+1（io_contract.md §7.1））
 - [ ] 签名冲突报告（如有，按 PRINCIPLES §5 处理）
 - [ ] 文档同步声明
 
@@ -511,23 +523,24 @@ W8 定期审计 — 跨组（兜底机制）
 
 ---
 
-# 附录：5 层防御 × W 工作流对照表
+# 附录：6 层防御 × W 工作流对照表
 
 > 防御层级与工作流的二维映射。每次交付声明里应当显式标注通过的层级，例如：
 >
-> > 文档同步：更新了 `docs/...` ；防御层级：L1 ✅ / L2 ✅ / L3 ✅ / L4 concurrency-review ✅ / L5 race+bench ✅。
+> > 文档同步：更新了 `docs/...` ；防御层级：L0 hooks ✅ / L1 ✅ / L2 ✅ / L3 ✅ / L4 io-review+concurrency-review ✅ / L5 race+bench ✅。
 
 | 层 | 实施位置 | 触发时机 | 关联 W 工作流 |
 | --- | --- | --- | --- |
+| **L0 Hooks 自动化** | `.claude/settings.json`（共享）两类强制 Hook：IO 铁律检查 + 代码↔文档双向同步 | 编辑/写 `.go` 后 + 会话 Stop（机械执行，不依赖自觉） | 所有 W 工作流共用（事前/事中自动拦截） |
 | **L1 文档约束** | `docs/` 各规范（含 `ai_dev_guide.md §8` 约束总清单） | 设计阶段 | W1 设计先行（必经） |
 | **L2 Skill 检查步骤** | 每个 `SKILL.md` 第 0 步前置检查 + 中间步骤 | 调用 `/new-*` / `/sync-feature-to-docs` 时 | W2-W5 每个 new-* / W7 增量同步 |
 | **L3 自检清单** | OPERATIONS §1.1-§1.6 交付前清单 | 每次交付前 | W2-W7 末步 |
-| **L4 审计 Skill** | `doc-sync-check` / `concurrency-review` / `performance-review` / `domain-invariant-check` / `failure-path-review` | 增量同步 + 发版前 | W7 增量同步 / W8 定期审计 |
-| **L5 测试验证** | `go test -race` / `go test -bench` / `framework.InjectXxxFailure` 故障注入 | 每次 PR + CI | 所有 W 工作流共用 |
+| **L4 审计 Skill** | `doc-sync-check` / `concurrency-review` / `performance-review` / `io-review` / `domain-invariant-check` / `failure-path-review` | 增量同步 + 发版前 | W7 增量同步 / W8 定期审计 |
+| **L5 测试验证** | `go test -race` / `go test -bench` / IO 计数断言 / `framework.InjectXxxFailure` 故障注入 | 每次 PR + CI | 所有 W 工作流共用 |
 
-**任一层不过 = 未交付**。每次交付声明里应当显式标注通过的层级。
+**任一层不过 = 未交付**。每次交付声明里应当显式标注通过的层级。L0 是不依赖 AI 自觉的自动兜底，与 L1-L5 叠加（原理见 `PRINCIPLES.md §14`）。
 
-## 5 层防御与"不可绕过"的关系
+## 6 层防御与"不可绕过"的关系
 
 | PRINCIPLES.md §2.2 不可绕过项 | 主要由哪一层防御覆盖 |
 |----------------------------|---------------------|
@@ -540,5 +553,8 @@ W8 定期审计 — 跨组（兜底机制）
 | 新增热路径未登记 §2 | L4 performance-review + L3 §1.1 |
 | 不变量声明 / 实现脱节 | L4 domain-invariant-check |
 | 失败路径文档 / 测试缺失 | L4 failure-path-review + L5 |
+| 循环内单条查询（N+1）/ 独立串行编排 | L0 hooks(IO 铁律) + L4 io-review + L5 IO 计数断言 |
+| 配置凭据明文 / 密钥硬编码入库 | L0 hooks(凭据可选) + L4 doc-sync-check(R-CONF-*) |
+| 漏"文档同步：..."声明 | L0 hooks(双向同步 Stop) + L3 §1.5 |
 
-防御层级的设计哲学：**L1-L2 是事前预防（让 AI 不犯错），L3 是事中自检（一次 PR 内的自查），L4 是事后审计（PR 合并前的兜底），L5 是运行时证明（CI 阻断错误代码）**。任一层失效，下一层兜底。
+防御层级的设计哲学：**L0 是自动拦截（不依赖自觉，机械执行），L1-L2 是事前预防（让 AI 不犯错），L3 是事中自检（一次 PR 内的自查），L4 是事后审计（PR 合并前的兜底），L5 是运行时证明（CI 阻断错误代码）**。任一层失效，下一层兜底。
