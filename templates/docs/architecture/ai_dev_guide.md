@@ -22,7 +22,7 @@
 | 文档索引 | `docs/INDEX.md` | 文档目录 |
 | 实现进度 | `docs/BUILD_STATUS.md` | 状态 |
 
-## 3. Skill 体系（12 个）
+## 3. Skill 体系（18 个）
 
 详见 `.claude/skills/`。
 

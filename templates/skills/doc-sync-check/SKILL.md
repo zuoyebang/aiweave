@@ -67,7 +67,7 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
 
 **维度 8：规范主体业务名泄漏（仅当 scope 含 `aiweave` 或 `all` 时启用）**
 
-> 此维度审计 `aiweave/docs-spec/*` 与 `aiweave/skills-spec/*` 的"规范主体 vs 参考示例"双轨结构是否被违反。详细规则见 [`PRINCIPLES.md §12 占位符规则`](../../PRINCIPLES.md#12-占位符规则强制--双轨结构)。
+> 此维度审计 `aiweave/docs-spec/*` 与 `aiweave/skills-spec/*` 的"规范主体 vs 参考示例"双轨结构是否被违反。详细规则见 [`PRINCIPLES.md §12 占位符规则`](../../../PRINCIPLES.md#12-占位符规则强制--双轨结构)。
 
 > ⚠️ **本维度自身豁免声明（§12.6 #6 meta 内容）**：本节下方第 2 步的"业务名关键词清单"、第 5 步的"误报抑制规则"是 audit 规则的 meta 内容——这些清单行**不参与**自身的维度 8 审计。AI 在扫描 `templates/skills/doc-sync-check/SKILL.md` 时应主动跳过本节内的关键词清单与对照表（按行匹配"`Register / Login`"类清单格式即可识别）。
 

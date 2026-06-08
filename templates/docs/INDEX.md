@@ -31,6 +31,12 @@
 | [architecture/logging.md](architecture/logging.md) | 日志规范 |
 | [architecture/ai_dev_guide.md](architecture/ai_dev_guide.md) | AI 原生研发手册 |
 | [architecture/mvp_rebuild_path.md](architecture/mvp_rebuild_path.md) | 分阶段构建路径 |
+| [architecture/concurrency_safety.md](architecture/concurrency_safety.md) | 并发安全：共享状态注册表 / 锁策略 / Channel / 危险操作清单（约束类，推荐启用） |
+| [architecture/performance_contract.md](architecture/performance_contract.md) | 性能合约：SLA / 热路径 / 内存预算 / 背压（约束类，推荐启用） |
+| [architecture/observability.md](architecture/observability.md) | 可观测性：服务级 Metrics / Cardinality 控制 / 告警规则（约束类，推荐启用） |
+| [architecture/io_contract.md](architecture/io_contract.md) | IO 合约：两条 IO 铁律 / 聚合器 / 并行编排原语 / 往返预算（约束类，强烈推荐） |
+| [architecture/cross_service_contract.md](architecture/cross_service_contract.md) | 跨服务合约：上下游依赖图 / 故障传播矩阵 / 接口版本（约束类，多服务时启用） |
+| [architecture/runtime_profile.md](architecture/runtime_profile.md) | 运行时基线：人工运行时数据快照（如有） |
 
 ## 接口设计
 
@@ -60,6 +66,7 @@
 | [service/service_design.md](service/service_design.md) | Service 层总览：错误处理 / 模块依赖 / 调用矩阵 |
 | [service/{module}_service.md](service/{module}_service.md) | 单模块详细设计 |
 | [service/scheduled_tasks_design.md](service/scheduled_tasks_design.md) | 定时任务 + MQ 消费者设计 |
+| [service/transaction_design.md](service/transaction_design.md) | 分布式事务：事务边界清单 / 补偿 / 幂等 / 失败路径全景图（约束类，跨数据源时启用） |
 
 ## 熔断器设计
 

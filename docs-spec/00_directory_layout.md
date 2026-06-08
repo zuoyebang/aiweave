@@ -56,7 +56,7 @@
 │
 └── .claude/
     ├── settings.local.json  # 项目级设置
-    └── skills/              # 11 个 Skill（详见 skills-spec/）
+    └── skills/              # 18 个 Skill（详见 skills-spec/）
         ├── new-model/SKILL.md
         ├── new-service/SKILL.md
         └── ...

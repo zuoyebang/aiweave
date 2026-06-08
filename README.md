@@ -118,7 +118,7 @@ aiweave/
 ├── INDEX.md                 # 索引（所有规范文档的目录）
 ├── PRINCIPLES.md            # 核心原则（黄金法则、双向同步纪律、签名冲突裁决）
 │
-├── docs-spec/               # docs/ 目录的规范（编号 00-24，覆盖完整设计视角）
+├── docs-spec/               # docs/ 目录的规范（编号 00-26，覆盖完整设计视角）
 │   ├── 00_directory_layout.md      # 目录布局
 │   ├── 01_index_md_spec.md         # INDEX.md 写法
 │   ├── 02_build_status_md_spec.md  # 实现进度 + 约束清单状态 + 运行时基线

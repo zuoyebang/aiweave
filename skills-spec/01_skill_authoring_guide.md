@@ -2,7 +2,7 @@
 
 > 规定 `.claude/skills/{name}/SKILL.md` 的标准结构、frontmatter 格式、步骤化要求、文档同步契约、测试同步契约。
 >
-> **本文同时是 12 个 Skill 的"公共章节真相源"**——所有 SKILL.md 中的公共部分（第 0 步前置 / 第 1 步必读 / 第 4 步文档同步 / 第 5 步测试同步 / 第 6 步验证）都从下方 §A-§E 抽取，每个 SKILL.md 只保留 Skill 特定内容。
+> **本文同时是 18 个 Skill 的"公共章节真相源"**——所有 SKILL.md 中的公共部分（第 0 步前置 / 第 1 步必读 / 第 4 步文档同步 / 第 5 步测试同步 / 第 6 步验证）都从下方 §A-§E 抽取，每个 SKILL.md 只保留 Skill 特定内容。
 
 ---
 
@@ -126,6 +126,12 @@ base.RenderJsonSucc(ctx, result)
 | update-index | docs-spec/01_index_md_spec.md |
 | rebuild-from-docs | docs-spec/18_mvp_rebuild_path_spec.md |
 | sync-feature-to-docs | docs-spec/19_incremental_sync_spec.md |
+| new-saga-step | docs-spec/21_distributed_transaction_spec.md |
+| concurrency-review | docs-spec/20_concurrency_safety_spec.md |
+| performance-review | docs-spec/22_performance_contract_spec.md |
+| io-review | docs-spec/25_io_aggregation_spec.md |
+| domain-invariant-check | docs-spec/09_service_design_spec.md §7 |
+| failure-path-review | docs-spec/21_distributed_transaction_spec.md §6 + 24_cross_service_contract_spec.md §4 |
 
 ### 7. 不允许的写法
 
@@ -142,7 +148,7 @@ base.RenderJsonSucc(ctx, result)
 
 ## 第二部分：公共章节真相源
 
-> 12 个 SKILL.md 中的**第 0 / 1 / 4 / 5 / 6 步**的公共部分都从下方 §A-§E 抽取。SKILL.md 中通过 `（公共模板见 §A）` 等方式引用，只填充 Skill 特定内容。
+> 18 个 SKILL.md 中的**第 0 / 1 / 4 / 5 / 6 步**的公共部分都从下方 §A-§E 抽取。SKILL.md 中通过 `（公共模板见 §A）` 等方式引用，只填充 Skill 特定内容。
 
 ### §A 公共第 0 步：BUILD_STATUS 与拒绝规则
 
@@ -267,7 +273,7 @@ cd test && go test ./cases/{relevant}/...
 
 ---
 
-## 第三部分：12 个 Skill 速查表
+## 第三部分：18 个 Skill 速查表
 
 | Skill | 用途 | 触发示例 | 主 md |
 |-------|------|---------|-------|
@@ -283,3 +289,9 @@ cd test && go test ./cases/{relevant}/...
 | update-index | 自动维护 INDEX.md | `/update-index [dry-run]` | INDEX.md |
 | rebuild-from-docs | 从 docs 重建任意模块或整工程 | `/rebuild-from-docs {module}` | architecture/mvp_rebuild_path.md |
 | sync-feature-to-docs | 增量需求同步（B1 场景） | `/sync-feature-to-docs {feature}` | docs-spec/19_incremental_sync_spec.md |
+| new-saga-step | 生成 Saga 步骤 + 补偿 + 幂等 Key | `/new-saga-step {module}/{step}` | service/transaction_design.md |
+| concurrency-review | 审计代码 ↔ 并发安全约束一致性 | `/concurrency-review [scope]` | architecture/concurrency_safety.md |
+| performance-review | 审计代码 ↔ 性能合约约束一致性 | `/performance-review [scope]` | architecture/performance_contract.md |
+| io-review | 审计代码 ↔ IO 铁律一致性 | `/io-review [scope]` | architecture/io_contract.md |
+| domain-invariant-check | 审计代码 ↔ 领域不变量一致性 | `/domain-invariant-check [scope]` | service/{module}_service.md §7 |
+| failure-path-review | 审计失败路径文档 / 测试覆盖完整性 | `/failure-path-review [scope]` | service/transaction_design.md §6 |

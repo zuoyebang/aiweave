@@ -4,7 +4,7 @@
 
 > 落地工程把本表复制到 `docs/INDEX.md §0`，按工程实际启用情况标记每个规范的状态。
 >
-> AIWeave 骨架本身的所有 25 篇 docs-spec + 17 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
+> AIWeave 骨架本身的所有 27 篇 docs-spec + 18 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
 
 ### 0.1 规范启用状态
 
@@ -85,7 +85,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [skills-spec/00_skill_overview.md](skills-spec/00_skill_overview.md) | Skill 体系总览：11 大类型、命名约定、调用顺序、与 Stage 的协同 |
+| [skills-spec/00_skill_overview.md](skills-spec/00_skill_overview.md) | Skill 体系总览：4 类分组（创建 9 / 维护 2 / 审计 6 / 终极 1）、命名约定、调用顺序、与 Stage 的协同 |
 | [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) | Skill 编写指南：frontmatter / 步骤化结构 / 文档同步 / 测试同步 / 验证 |
 | [skills-spec/02_settings_local_json_spec.md](skills-spec/02_settings_local_json_spec.md) | settings.local.json 规范：permissions / hooks / 推荐配置 |
 
