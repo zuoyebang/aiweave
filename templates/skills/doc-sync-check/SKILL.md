@@ -1,6 +1,6 @@
 ---
 name: doc-sync-check
-description: 检查 docs/ 文档与代码的一致性，发现缺失文档、过期文档和未登记的文档。同时审计 aiweave 规范本体是否含业务名泄漏（PRINCIPLES §12）。用于定期审计文档质量。
+description: 检查 docs/ 文档与代码的一致性，发现缺失文档、过期文档和未登记的文档。同时审计 aiweave 规范本体是否含业务名泄漏（PRINCIPLES §12），并机械扫描配置安全（R-CONF-*）与部署/运行时生命周期（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）危险锚。用于定期审计文档质量。
 disable-model-invocation: true
 argument-hint: "[scope] 可选：api / service / schema / architecture / cache / aiweave / all"
 ---
@@ -21,7 +21,7 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
 
 读 `CLAUDE.md`「范围判定表」——它是"代码路径 ↔ 文档路径"的完整双向映射。
 
-## 第 2 步：7 维度检查
+## 第 2 步：9 维度检查
 
 **维度 1：代码存在但文档缺失（最严重）**
 
@@ -98,6 +98,18 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
    - c. §12.4 自身的关键词清单 / §12.3 自身的反例对照表 / 本 Skill 第 2 步 b 项的关键词清单—— meta 内容，不参与审计
    - d. AIWeave 规范本体引用 template 文件实名（如 `templates/docs/architecture/auth_flow.md`）不算泄漏，但应注明"template 文件实际名为 X，落地按业务重命名"
    - e. 行末含 `<!-- aiweave:allow=domain-leak reason=... -->` 注解时跳过。每文件豁免不超过 3 处，超出 → 标 🟡 中度（建议结构调整）。
+
+**维度 9：配置安全 + 部署/运行时危险锚（仅当对应规范启用时）**
+
+> 折叠审计：参照 26 把 `R-CONF-*` 折叠进本 Skill 的模式，27 的部署/运行时锚同样在此机械扫描，不另设审计 Skill。锚定义见 [`ai_dev_guide.md §10.8`](../../../templates/docs/architecture/ai_dev_guide.md)（R-CONF-*）/ §10.9（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）。grep 锚为信号级，命中标 🟡 待复核。
+
+- **配置安全（如启用 26）**：扫描配置文件 / 代码中的明文凭据、硬编码密钥、拉取未 fail-fast（`R-CONF-PLAINTEXT-CRED` / `R-CONF-HARDCODE-SECRET` / `R-CONF-SECRET-COMMIT` / `R-CONF-NO-FAILFAST`）
+- **部署/运行时（如启用 27）**：
+  - 进程入口（`func main` / 子命令）未注册 `signal.Notify` 终止信号 / 收到信号即硬退出 → `R-SHUTDOWN-NO-SIGNAL` / `R-SHUTDOWN-NO-DRAIN`
+  - 与 `concurrency_safety.md §1.1` 常驻 goroutine 清单对账，未接入关闭排空 → `R-SHUTDOWN-LEAK-GOROUTINE`（与 `/concurrency-review` 交叉复核）
+  - liveness 探针 handler 内含依赖检查（`.Ping(` / 下游调用）→ `R-PROBE-LIVENESS-DEEP`；对外服务缺探针端点 → `R-PROBE-MISSING`
+  - 镜像定义缺非 root 声明 → `R-DEPLOY-ROOT`；编排清单缺 requests/limits → `R-DEPLOY-NO-LIMITS`
+- 命中且未豁免（行末 `// aiweave:allow=<rule-id>`）→ 列入 🟡 待复核，核对 `deployment.md` §3/§5 与代码一致
 
 ## 第 3 步：输出格式
 

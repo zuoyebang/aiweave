@@ -448,7 +448,7 @@ W8 定期审计 — 跨组（兜底机制）
 
 - [ ] 全链路文档变更清单（新增 / 修改 / 无变更分类）
 - [ ] 每条变更的 diff 摘要
-- [ ] 21 项交叉一致性检查通过：
+- [ ] 22 项交叉一致性检查通过：
 
   **基础 7 项（v1.0）：**
   - [ ] 1. INDEX 登记
@@ -492,6 +492,13 @@ W8 定期审计 — 跨组（兜底机制）
          清单登记；聚合器 / single-flight 共享指针未被就地修改（只读）
   - [ ] 21. 配置中心 / 资源凭据为密文（非明文）；密钥未硬编码 / 未入 git；新增拉取项在
          config.md §7.3 登记且失败 fail-fast（命中 R-CONF-* → 拒绝合并）
+
+  **部署 / 运行时生命周期 1 项（v1.4）：**
+  - [ ] 22. 进程入口注册终止信号且优雅关闭排空在途（readiness 转 false → 停 accept → drain
+         带超时 → 停常驻 goroutine/消费者并提交位点 → 关连接池）；常驻 goroutine 与
+         concurrency_safety.md §1.1 清单对账无泄漏；liveness 探针未做依赖检查；镜像非 root +
+         编排清单含 requests/limits（命中 R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-* → 拒绝合并；
+         详见 deployment.md §3/§5）
 
 - [ ] 测试用例覆盖检查（每个新接口 4 类用例 + 涉及并发的需 `go test -race` 通过 +
       涉及热路径的需 `go test -bench` 比对基线 + 涉及多数据源写入的需故障注入覆盖
@@ -555,6 +562,7 @@ W8 定期审计 — 跨组（兜底机制）
 | 失败路径文档 / 测试缺失 | L4 failure-path-review + L5 |
 | 循环内单条查询（N+1）/ 独立串行编排 | L0 hooks(IO 铁律) + L4 io-review + L5 IO 计数断言 |
 | 配置凭据明文 / 密钥硬编码入库 | L0 hooks(凭据可选) + L4 doc-sync-check(R-CONF-*) |
+| 优雅关闭缺排空 / 探针误配 / 常驻 goroutine 泄漏 | L4 doc-sync-check(R-SHUTDOWN-*/R-PROBE-*/R-DEPLOY-*) + L4 concurrency-review(§1.1 goroutine 对账) |
 | 漏"文档同步：..."声明 | L0 hooks(双向同步 Stop) + L3 §1.5 |
 
 防御层级的设计哲学：**L0 是自动拦截（不依赖自觉，机械执行），L1-L2 是事前预防（让 AI 不犯错），L3 是事中自检（一次 PR 内的自查），L4 是事后审计（PR 合并前的兜底），L5 是运行时证明（CI 阻断错误代码）**。任一层失效，下一层兜底。

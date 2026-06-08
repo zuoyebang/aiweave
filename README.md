@@ -1,13 +1,13 @@
 # AIWeave — Go 后端工程「AI 原生 + AI 可重建」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.3-green.svg)](INDEX.md#变更日志)
-[![docs-spec](https://img.shields.io/badge/docs--spec-27-informational.svg)](docs-spec/)
+[![Version](https://img.shields.io/badge/version-v1.4-green.svg)](INDEX.md#变更日志)
+[![docs-spec](https://img.shields.io/badge/docs--spec-28-informational.svg)](docs-spec/)
 [![skills](https://img.shields.io/badge/skills-18-informational.svg)](templates/skills/)
 [![Author](https://img.shields.io/badge/author-XuRuibo-orange.svg)](#10-作者与联系方式)
 
 > **作者**：XuRuibo &lt;hustxurb@163.com&gt;
-> 版本：v1.3 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
+> 版本：v1.4 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
 > 目标读者：项目架构师、AI Agent（Claude Code 等）
 
 **AIWeave**（AI 编织）—— 名字呼应规范的两面：
@@ -118,7 +118,7 @@ aiweave/
 ├── INDEX.md                 # 索引（所有规范文档的目录）
 ├── PRINCIPLES.md            # 核心原则（黄金法则、双向同步纪律、签名冲突裁决）
 │
-├── docs-spec/               # docs/ 目录的规范（编号 00-26，覆盖完整设计视角）
+├── docs-spec/               # docs/ 目录的规范（编号 00-27，覆盖完整设计视角）
 │   ├── 00_directory_layout.md      # 目录布局
 │   ├── 01_index_md_spec.md         # INDEX.md 写法
 │   ├── 02_build_status_md_spec.md  # 实现进度 + 约束清单状态 + 运行时基线
@@ -145,7 +145,8 @@ aiweave/
 │   ├── 23_observability_spec.md             # 可观测性（Metrics 限服务级）
 │   ├── 24_cross_service_contract_spec.md    # 跨服务合约
 │   ├── 25_io_aggregation_spec.md            # IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止串行编排）
-│   └── 26_config_center_spec.md             # 配置中心与凭据加密（配置上云 + 密钥不入库 + fail-fast）
+│   ├── 26_config_center_spec.md             # 配置中心与凭据加密（配置上云 + 密钥不入库 + fail-fast）
+│   └── 27_deployment_runtime_spec.md        # 部署与运行时生命周期（部署产物 + 探针分层 + 优雅启停 + 发布回滚）
 │
 ├── skills-spec/             # .claude/skills/ 的规范
 │   ├── 00_skill_overview.md         # Skill 体系总览（频率、命名、调用顺序）

@@ -53,7 +53,7 @@ CLAUDE.md 必须按以下章节顺序组织：
 ### 3.2 不该写的内容
 
 - 项目历史 / 团队组成（写在 README 不写在 CLAUDE.md）
-- 运维流程 / 部署方式（写在 runbook）
+- 运维**操作流程**（发布步骤 / 值班 / 应急预案，写在 runbook）。注意：部署**设计契约**（镜像必含项 / 探针语义 / 优雅启停时序 / 发布回滚策略）属系统蓝图，写在 `docs/architecture/deployment.md`，由 [`docs-spec/27`](27_deployment_runtime_spec.md) 治理——两者的判定标准是"能否服务于重建工程"
 - 商业背景 / 市场分析（不该出现在工程文档）
 
 ---

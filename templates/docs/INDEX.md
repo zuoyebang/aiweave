@@ -37,6 +37,7 @@
 | [architecture/io_contract.md](architecture/io_contract.md) | IO 合约：两条 IO 铁律 / 聚合器 / 并行编排原语 / 往返预算（约束类，强烈推荐） |
 | [architecture/cross_service_contract.md](architecture/cross_service_contract.md) | 跨服务合约：上下游依赖图 / 故障传播矩阵 / 接口版本（约束类，多服务时启用） |
 | [architecture/runtime_profile.md](architecture/runtime_profile.md) | 运行时基线：人工运行时数据快照（如有） |
+| [architecture/deployment.md](architecture/deployment.md) | 部署与运行时生命周期：部署产物 / 镜像约束 / 探针分层 / 优雅启停 / 发布回滚（约束类，强烈推荐） |
 
 ## 接口设计
 

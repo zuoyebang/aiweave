@@ -193,6 +193,16 @@
 | 凭据对称加密（密钥应用层持有 / 不入库 / 轮换） | [`config.md §8`](config.md) | ⬜ / 🟢 视工程启用 |
 | 启动期 fail-fast 加载时序 | [`config.md §9`](config.md) | ⬜ / 🟢 视工程启用 |
 
+### 8.13 部署与运行时生命周期约束（v1.4 / 如启用本规范）
+
+| 约束类 | 文档锚点 | 状态 |
+|--------|---------|------|
+| 部署产物蓝图（镜像 / 编排 / 流水线） | [`deployment.md §1`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 容器镜像约束（多阶段 / 非 root / 最小镜像） | [`deployment.md §2`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 健康探针语义（liveness / readiness / startup 分层） | [`deployment.md §3`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 启动就绪 + 优雅关闭时序 | [`deployment.md §4`](deployment.md) + [`§5`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 发布回滚策略 + 资源配额弹性 | [`deployment.md §6`](deployment.md) + [`§7`](deployment.md) | ⬜ / 🟢 视工程启用 |
+
 > 运行时基线属于"AI 不直接感知"维度，启用与否由工程负责人决定（详见 INDEX.md §0 采纳进度）。
 
 ---
@@ -296,7 +306,19 @@
 | `R-CONF-SECRET-COMMIT` | 含密钥 / 明文凭据的文件入 git | git diff 含密钥文件且不在 `.gitignore` | — | 🟢 |
 | `R-CONF-NO-FAILFAST` | 配置中心拉取失败未 fail-fast | 拉取调用后 `if err != nil` 分支无 `panic` / `os.Exit` / `Fatal` / `return err`（启动期） | 非启动期 / 有降级设计且已登记 | 🟢 |
 
-### 10.9 规则维护
+### 10.9 部署与运行时生命周期类（v1.4 新增 / 由 `doc-sync-check` 触发）
+
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-SHUTDOWN-NO-SIGNAL` | 进程入口未注册终止信号 / 收到信号即硬退出 | 含 `func main` / 子命令入口但无 `signal.Notify` | 库 / 非常驻命令（一次性脚本） | 🟢 |
+| `R-SHUTDOWN-NO-DRAIN` | 优雅关闭缺在途排空（直接 `os.Exit`） | `signal.Notify` 后直接 `os.Exit` 无 `Shutdown` / drain | 已调 `srv.Shutdown` / `cancel()` + 等待 | 🟢 |
+| `R-SHUTDOWN-LEAK-GOROUTINE` | 常驻 goroutine / 消费者未接入关闭排空 | §1.1 登记的常驻 goroutine 在关闭路径无对应 cancel | concurrency_safety.md §1.1 已对账覆盖 | 🟢 |
+| `R-PROBE-LIVENESS-DEEP` | liveness 探针内做依赖检查（DB/缓存/下游） | liveness handler 含 `.Ping(` / `.Get(` / 下游调用 | 仅 readiness handler | 🟢 |
+| `R-PROBE-MISSING` | 对外服务缺 readiness / liveness 端点 | 路由表无 `{live-path}` / `{ready-path}` | 纯消费者 / 任务进程（无对外 HTTP） | 🟢 |
+| `R-DEPLOY-ROOT` | 容器以 root 运行 | `{Dockerfile-path}` 无 `USER` 非 root 声明 | 已声明非 root user | 🟢 |
+| `R-DEPLOY-NO-LIMITS` | 编排清单缺 requests/limits | `{deploy-manifest-path}` 无 `requests` / `limits` | — | 🟢 |
+
+### 10.10 规则维护
 
 - 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）

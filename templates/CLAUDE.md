@@ -211,7 +211,7 @@ Hook 脚本在 `scripts/hooks/`，纯标准工具实现。配置规范见 `aiwea
 | **新增代码** | 必须新建/更新对应 md，并在 INDEX.md 登记 |
 | **删除代码** | 必须同步删除/更新对应 md，并更新 INDEX.md |
 
-### 18 条具体执行规则
+### 19 条具体执行规则
 
 #### 规则 1：修改代码前 — 查找关联文档
 按下方"范围判定表"逐条检查，确认本次修改涉及哪些 md。
@@ -322,6 +322,17 @@ md 与代码冲突时按规则 7 处理。
 - 接入新配置中心 → 实现 `config.md §7.1` Client 接口，网络调用只在实现层
 - 出现明文凭据 / 硬编码密钥 → 主动报告，拒绝提交
 
+#### 规则 19：部署与运行时生命周期约束（强制）
+
+- 新增 / 修改进程入口（`main` / 子命令）→ 必须注册 `SIGTERM`/`SIGINT` 并接入优雅关闭；无信号处理 / 收到信号即 `os.Exit` → `R-SHUTDOWN-NO-SIGNAL` / `R-SHUTDOWN-NO-DRAIN`
+- 优雅关闭顺序（强制）：readiness 转 false → 停 accept → 排空在途（带超时）→ 停常驻 goroutine / 消费者（先提交位点）→ 关连接池 → 退出；超时强杀兜底并记录未排空项
+- 新增常驻 goroutine / 消费者 → 必须同时在 `concurrency_safety.md §1.1` 登记**且**接入关闭排空；只登记不排空 → `R-SHUTDOWN-LEAK-GOROUTINE`
+- liveness 探针**禁止**查外部依赖（DB/缓存/下游），依赖检查只放 readiness → `R-PROBE-LIVENESS-DEEP`；对外服务必须暴露 liveness + readiness（慢启动加 startup），缺失 → `R-PROBE-MISSING`
+- readiness 置 true 必须晚于"配置就绪（规则 18）+ 资源初始化 + 信号注册"；未就绪即 accept → 拒绝
+- 容器镜像运行层**禁止** root → `R-DEPLOY-ROOT`；编排清单**禁止**缺 requests/limits → `R-DEPLOY-NO-LIMITS`；镜像引用**禁止**可变 tag（`latest`），必须内容寻址
+- 含不兼容 Schema 变更的发布 → 回滚前必须确认 `database_design.md §8` 软兼容已就位
+- 详见 `docs/architecture/deployment.md`
+
 ### 危险模式清单
 
 > AI 生成代码前/后必查。命中以下模式 → 停下来确认或修正。
@@ -364,6 +375,13 @@ md 与代码冲突时按规则 7 处理。
 | **加密密钥 / 密码硬编码在代码** | 密钥泄漏 | 应用层 / 环境注入 | `R-CONF-HARDCODE-SECRET` |
 | **含密钥 / 明文凭据的文件入 git** | 仓库泄密 | `.gitignore` + 环境注入 | `R-CONF-SECRET-COMMIT` |
 | **配置中心拉取失败未 fail-fast** | 空/旧配置静默启动 | 拉取失败即终止进程 | `R-CONF-NO-FAILFAST` |
+| **进程入口未注册终止信号 / 收到信号即硬退出** | 发布即掐断在途请求 | `signal.Notify` + 优雅关闭 | `R-SHUTDOWN-NO-SIGNAL` |
+| **优雅关闭缺在途排空（直接 `os.Exit`）** | 在途请求/消息丢失 | `Shutdown` + drain（带超时） | `R-SHUTDOWN-NO-DRAIN` |
+| **常驻 goroutine/消费者未接入关闭排空** | goroutine 泄漏/位点不提交 | 接入 cancel + 先提交位点 | `R-SHUTDOWN-LEAK-GOROUTINE` |
+| **liveness 探针做依赖检查（DB/缓存/下游）** | 依赖抖动→误杀重启→放大故障 | 依赖检查只放 readiness | `R-PROBE-LIVENESS-DEEP` |
+| **对外服务缺 readiness/liveness 端点** | 流量打到未就绪实例 | 暴露探针 3 件套 | `R-PROBE-MISSING` |
+| **容器以 root 运行** | 提权风险 | 运行层声明非 root user | `R-DEPLOY-ROOT` |
+| **编排清单缺 requests/limits** | OOMKilled / 调度不可控 | 声明 requests+limits | `R-DEPLOY-NO-LIMITS` |
 
 ### 范围判定表
 
@@ -410,6 +428,10 @@ md 与代码冲突时按规则 7 处理。
 | **【铁律】循环内单条查询/写/RPC、独立读串行编排、聚合器/扇出并行/批量读新增** | `docs/architecture/io_contract.md` §2 铁律豁免 + §3 聚合器 + §4 原语 + §1 往返预算 |
 | **`helpers/{aggregator}/` 聚合器 / `single-flight` / worker pool 新增** | `docs/architecture/io_contract.md` §3 / §4 / §6（与 concurrency_safety.md §1.1 对齐） |
 | **`conf/` 凭据字段 / `Encrypt`·`Decrypt` / 配置中心 `Client`·`Sync` / 拉取映射新增** | `docs/architecture/config.md` §6-§9（配置上云 / 凭据加密，详见 docs-spec/26） |
+| **`main.go` / 子命令入口新增 `signal.Notify` / `srv.Shutdown` / `cancel()`** | `docs/architecture/deployment.md` §4 启动就绪 + §5 优雅关闭（与 concurrency_safety.md §1.1 对账） |
+| **探针 handler（`/live` / `/ready` / `/startup`）新增 / 修改** | `docs/architecture/deployment.md` §3 探针分层语义 |
+| **`{Dockerfile-path}` / 编排清单 / CI-CD 流水线新增 / 修改** | `docs/architecture/deployment.md` §1 产物 + §2 镜像约束 + §7 配额弹性 |
+| **发布策略 / 回滚钩子调整** | `docs/architecture/deployment.md` §6 发布与回滚策略 |
 
 ### 输出格式
 

@@ -4,7 +4,7 @@
 
 > 落地工程把本表复制到 `docs/INDEX.md §0`，按工程实际启用情况标记每个规范的状态。
 >
-> AIWeave 骨架本身的所有 27 篇 docs-spec + 18 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
+> AIWeave 骨架本身的所有 28 篇 docs-spec + 18 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
 
 ### 0.1 规范启用状态
 
@@ -18,6 +18,7 @@
 | `docs-spec/24_cross_service_contract` 跨服务合约 | 🟢 / 🟡 / ⬜ / 🚫 | — | 单体服务可标 🚫 |
 | `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（两条 IO 铁律） |
 | `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
+| `docs-spec/27_deployment_runtime` 部署与运行时生命周期 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（容器化部署 / 优雅启停 / 探针） |
 | Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
@@ -27,8 +28,8 @@
 | 工程复杂度 | 推荐启用集 |
 | --- | --- |
 | **简单 CRUD / 内部工具服务** | 基础规范 + 20 §2 共享状态注册表 + 09 §7 领域不变量 + CLAUDE.md 危险模式清单 |
-| **生产服务常态（推荐起点）** | 基础规范 + 20 + 21 + 22 §2 热路径 + 23 + 25 IO 铁律 + Hooks（L0）+ 18 §11 安全重构 + 审计 Skill `concurrency-review` / `io-review` / `domain-invariant-check` |
-| **高并发 / 分布式核心** | 全部启用（含 24 + 25 + 26 + runtime_profile + Hooks + 全部审计 Skill + §11 演进效果度量） |
+| **生产服务常态（推荐起点）** | 基础规范 + 20 + 21 + 22 §2 热路径 + 23 + 25 IO 铁律 + 27 部署与运行时生命周期 + Hooks（L0）+ 18 §11 安全重构 + 审计 Skill `concurrency-review` / `io-review` / `domain-invariant-check` |
+| **高并发 / 分布式核心** | 全部启用（含 24 + 25 + 26 + 27 + runtime_profile + Hooks + 全部审计 Skill + §11 演进效果度量） |
 
 ### 0.3 状态语义
 
@@ -49,7 +50,7 @@
 
 ## docs-spec/ —— `docs/` 目录的规范
 
-编号 00-26，覆盖一个 Go 后端工程所需的全部设计视角，并支持"建设模式 + 增量同步模式"两种使用方式。
+编号 00-27，覆盖一个 Go 后端工程所需的全部设计视角，并支持"建设模式 + 增量同步模式"两种使用方式。
 
 | 序号 | 规范 | 对应 docs/ 路径 | 说明 |
 |------|------|---------------|------|
@@ -80,6 +81,7 @@
 | 24 | [docs-spec/24_cross_service_contract_spec.md](docs-spec/24_cross_service_contract_spec.md) | docs/architecture/cross_service_contract.md | **跨服务合约规范**：上下游依赖图 / 上游合约 / 下游合约 / 故障传播矩阵 / 接口版本管理 + B1 反向同步规则 |
 | 25 | [docs-spec/25_io_aggregation_spec.md](docs-spec/25_io_aggregation_spec.md) | docs/architecture/io_contract.md | **IO 极致与聚合并行规范**：两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）/ 聚合器模式（收集→批量读→并行回源→单飞→异步写回）/ 并行编排原语 / 数据访问聚合约束 / IO 往返预算 / IO 回归测试 + B1 反向同步规则 |
 | 26 | [docs-spec/26_config_center_spec.md](docs-spec/26_config_center_spec.md) | docs/architecture/config.md §6-§9 | **配置中心与凭据加密规范**：配置上云权威源模型 / 配置中心 Client 抽象与拉取落盘编排 / 凭据对称加密（密钥应用层持有不入库）/ 启动期 fail-fast 加载时序（治理 config.md §6-§9，与 04 §2 边界划分） |
+| 27 | [docs-spec/27_deployment_runtime_spec.md](docs-spec/27_deployment_runtime_spec.md) | docs/architecture/deployment.md | **部署与运行时生命周期规范**：部署产物蓝图（镜像/编排/流水线）/ 容器镜像约束 / 健康探针分层语义（liveness/readiness/startup）/ 启动就绪时序（衔接 26）/ 优雅关闭时序（drain + 提交位点，对账 20 §1.1）/ 发布回滚策略（与 18 §11.5.4 边界）+ B1 反向同步规则。补齐"重建产物能上线"的第一性闭环 |
 
 ## skills-spec/ —— `.claude/skills/` 的规范
 
@@ -128,6 +130,7 @@
 
 | 日期 | 变更 | 触发事件 |
 |------|------|---------|
+| 2026-06-08 | v1.4 演进：部署与运行时生命周期 | 补齐第一性目标最后一块短板——"仅凭 docs 重建工程"必须包含"重建产物能部署、能优雅启停"：<br>**新增规范**：docs-spec/27 部署与运行时生命周期（部署产物蓝图 / 容器镜像约束 / 健康探针分层语义 liveness·readiness·startup / 启动就绪时序衔接 26 / 优雅关闭时序 drain+提交位点对账 20 §1.1 / 发布回滚策略与 18 §11.5.4 边界 / 资源配额弹性）<br>**新增模板**：templates/docs/architecture/deployment.md<br>**审计折叠**：参照 26 的 R-CONF-* 模式，部署锚 R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-* 折叠进 doc-sync-check（不新增 Skill，Skill 数维持 18）；doc-sync-check 维度 8→9<br>**机制完善**：ai_dev_guide §8.13 约束总清单 + §10.9 grep 锚索引；CLAUDE.md 规则 19 部署/运行时 + 危险模式 7 锚 + 范围判定表 4 行；OPERATIONS B1 清单 21→22 项 + 6 层防御映射 +1 行；03 §3.2 / 00 §5 边界修正（部署设计契约入 docs，操作手册入 runbook）<br>**边界划分**：27 ↔ 26 / 20 / 18 / 23 / 24<br>**体系升级**：docs-spec 27→28 篇（00-27）；Skill 维持 18 个 |
 | 2026-06-05 | v1.3 演进：IO 极致 + Hooks 机制 + 配置上云 | 落地"IO 极致"诉求与 AI 工程化标准强化：<br>**新增规范**：docs-spec/25 IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止独立串行编排；聚合器模式：收集→批量读→并行回源→单飞→异步写回；并行编排原语；IO 往返预算；IO 回归测试）/ docs-spec/26 配置中心与凭据加密（配置上云权威源模型 / Client 抽象拉取落盘编排 / 对称加密密钥应用层持有不入库 / 启动 fail-fast 时序）<br>**新增 Skill**：io-review（审计 代码 ↔ IO 铁律，审计类 5→6）<br>**新增模板**：templates/docs/architecture/io_contract.md；config.md 扩展 §6-§9<br>**Hooks 升级为强制规范**：skills-spec/02 §4 两类强制 Hook 族（IO 铁律检查 + 代码↔文档双向同步）放团队共享 settings.json；新增 L0 自动化防御层<br>**机制完善**：PRINCIPLES §13 IO 铁律 + §14 Hooks 机制；CLAUDE.md 规则 17 IO 聚合 + 规则 18 配置凭据 + 危险模式 R-IO-* / R-CONF-* + 范围判定表 3 行 + Hooks 子节；OPERATIONS 5 层防御→6 层（+L0）+ B1 清单 18→21 项；04 §2 ↔ 26 边界划分<br>**体系升级**：docs-spec 25→27 篇（00-26）；Skill 17→18 个 |
 | 2026-05-15 | 初版发布（v1.0） | 从真实工程实践抽象沉淀；19 篇 docs-spec + 12 个 Skill |
 | 2026-05-25 | v1.2 演进完整落地 | 按 `tc-md/aiweave-evolution-proposal.md` v1.2 推进，完整覆盖 15 项后端复杂系统痛点：<br>**新增规范**：docs-spec/20 并发安全 / 21 分布式事务 / 22 性能合约 / 23 可观测性 / 24 跨服务合约<br>**新增 Skill**：concurrency-review / performance-review / new-saga-step / domain-invariant-check / failure-path-review<br>**结构增强**：09 §7 领域不变量 + §4.N.8 事务一致性 + §10.5 伪码标记统一语法；02 §11 约束清单状态轨道 + §12 运行时基线区域；05 §8 字段演进；17 §4.7-§4.9 故障注入/并发/性能测试 framework + §5.5 高级用例；18 §11 安全重构方法论 + §11.5.4 灰度切流量；19 范围判定表扩展<br>**机制完善**：CLAUDE.md 16 条规则 + 危险模式清单（含 grep 锚）；ai_dev_guide.md 约束总清单 + 约束突破登记表 + grep 锚 rule-id 索引；OPERATIONS 第三部分 18 项 + 附录"5 层防御 × W 工作流对照表"；INDEX.md §0 采纳进度<br>**边界划分**：12 ↔ 22 / 13 ↔ 23<br>**体系升级**：Skill 体系 12 → 17，3 类分组 → 4 类分组（创建 / 维护 / 审计 / 终极） |
