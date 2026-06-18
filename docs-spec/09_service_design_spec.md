@@ -41,6 +41,7 @@ service_design.md（总览）必须按以下章节顺序组织：
 - `## 5.` 审计日志辅助函数（如有）
 - `## 6.` 定时任务 Service 方法（每个任务 → 调用的 service 方法 → 并行策略）
 - `## 7.` Service 间调用矩阵（合法 / 禁止调用方向）
+- `## 8.` 组装层 Assembler 登记（如有 DB→API 组装：哪些响应走 map 入参纯函数）
 
 > **完整章节骨架见** [`templates/docs/service/service_design.md`](../templates/docs/service/service_design.md)。
 
@@ -129,6 +130,24 @@ ASCII DAG（占位符示意）：
 | `{integrity-check-task}` | `{module}.{IntegrityCheckMethod}(ctx)` | 分布式锁互斥 | 缓存完整性巡检 |
 | `{periodic-aggregate-task}` | `{module}.{AggregateMethod}(ctx)` | 单进程外部调度 | 周期性聚合任务 |
 ```
+
+---
+
+## 7.5 §8 组装层 Assembler 登记（如有 DB→API 组装）
+
+凡"DB 模型 → API 响应"的组装走 Assembler 纯函数 + 已查好的 `map` 入参的，必须在 service_design.md §8 登记一张表，记录"选了什么"——哪些响应用此模式、关联数据 map 入参有哪些、是否纯函数。这是**表示记录槽位**（工程填空），不是决策方法论。
+
+```markdown
+| # | 响应类型 | 组装方法 | 关联数据 map 入参（`map[{id}]→{Model}`） | 纯函数（无 IO） |
+|---|---------|---------|------------------------------------|----------------|
+| 1 | `{Method-N}Resp` | `{Assembler}.Fill(mainList, total, {assoc-A}Map, ...).Build()` | `{assoc-A}Map` / `{assoc-B}Map` | 是 |
+```
+
+随表附结构性纪律（占位符化）：关联数据**强制 map 入参**、Assembler 内**禁止 DB/缓存/RPC 调用**、查询编排集中在上层、`Fill` 逐行从 map 取值做纯转换、主表空 → 统一空响应、map 入参从类型签名上强制"先批量查再传入"故可单测。
+
+> **决策方法论不在此复制**：组装层 map 入参纪律（结构上杜绝 N+1、可单测的推导）的真相源在 [`design-spec/02 §3.4`](../design-spec/02_data_model_design.md)，§8 槽位必须反向引用它，本规范只规定"该有此登记表"。
+>
+> 若工程无 DB→API 组装场景，§8 写"无组装层，N/A"。
 
 ---
 
@@ -427,6 +446,7 @@ func generate{Entity}Id() string {
 | 删除方法 | §3 + §4 整节移除 + §6 + api/*.md |
 | 新增模块 | service_design.md §3 + §4 + 新建 {module}_service.md |
 | 调整调用关系 | service_design.md §3.2 依赖图 + §7 调用矩阵 |
+| 新增 / 修改 Assembler 纯函数（`{Assembler}.Fill(...).Build()`，map 入参组装） | service_design.md §8 组装层 Assembler 登记新增 / 更新一行 |
 
 ---
 
@@ -595,3 +615,8 @@ func generateUserId() string {
 | `{entity-id}` / `{prefix-X}{...}` | userId / `ACC{yyyyMMdd}{seq3位}` |
 | `{Audience}` | Operator |
 
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

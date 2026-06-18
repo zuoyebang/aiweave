@@ -330,3 +330,8 @@ func (t *TypeName) Method2(args ...interface{}) error
 1. 停止生成业务代码
 2. 提醒用户：md 中缺失某签名，可能是 (a) 文档漏写，(b) 业务设计需要新增 helper
 3. 由用户裁决：补 md / 补 helper 函数 / 改业务设计避开缺失的签名
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

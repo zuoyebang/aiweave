@@ -370,3 +370,8 @@ BUILD_STATUS.md 必须按以下章节顺序组织：
 `BUILD_STATUS.md §11 约束清单状态轨道`追踪**单条约束条目的状态**（如 §2 共享状态注册表内"某条 mutex"是否启用对应校验）。
 
 两者粒度不同：INDEX.md §0 是规范级（粗），BUILD_STATUS.md §11 是条目级（细）。一个规范在 INDEX.md §0 标 🟢 启用，意味着它的所有 ⬜ 条目都被纳入 §11 追踪范围；标 ⬜ 未启用则其 §11 子表整体置 ⬜。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

@@ -64,10 +64,17 @@
 - 禁止使用：`{actor-id}` / `request_id` / IP / `trace_id` / 任何无界枚举值
 - url label 必须为路由模板（如 `/{prefix}/{audience}/{module}/:{param}`）
 
-### 3.3 Histogram bucket 约束
+### 3.3 Histogram bucket 设计（桶按 SLO 设）
 
+> 选型方法论 / 真相源见 [`aiweave/design-spec/06_resilience_design.md §3.3 / §7`](../../../design-spec/06_resilience_design.md)；表示规范见 `aiweave/docs-spec/23_observability_spec.md §3.3`。SLA 数值真相源见 [`performance_contract.md §1`](performance_contract.md)。
+
+- **桶边界对齐 SLA 分位（桶按 SLO 设）**：bucket 边界围绕本路径 SLA / SLO 分位点（P50 / P90 / P99 目标值）布桶，使 `histogram_quantile` 误差最小，不套用通用等距 / 指数桶
+- **label 带 status/mode**：关键路径 histogram 必须带 `status`（结果维度）与 `mode`（正常 / 降级运行模式维度）label，均为有界枚举（受 §3.2 禁止清单约束）
 - bucket 数量 ≤ 15
-- 推荐使用 LinearBuckets
+
+| 关键路径 histogram | SLO 分位点（布桶依据） | label |
+|------|------|------|
+| `{path-histogram}` | {P50/P90/P99 目标值} | `status`、`mode` |
 
 ### 3.4 Metric 总数约束
 
@@ -136,9 +143,14 @@ SLA 数值的真相源在 [`performance_contract.md §1`](performance_contract.m
 | --- | --- |
 | `helpers/metrics.go` 新增 `prometheus.MustRegister` | §2 对应分类新增一行；评估 cardinality |
 | 新增 label 维度 | 检查是否命中 §3.2 禁止清单 |
-| 新增 Histogram bucket | §3.3 检查 bucket 数 ≤ 15 |
+| 新增 Histogram / bucket | §3.3 检查 bucket 数 ≤ 15；校验桶边界对齐 SLA 分位（桶按 SLO 设）+ 关键路径 label 带 `status` / `mode` |
 | 新增告警规则 | §5.2 基础告警规则表新增一行 |
 
 ### 7.2 与 BUILD_STATUS §11 约束清单状态轨道的关系
 
 每个 Metric / 告警规则对应 BUILD_STATUS.md §11 "可观测性约束"类目的"已设计 / 已启用"计数。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

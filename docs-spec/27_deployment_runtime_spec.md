@@ -319,3 +319,8 @@ GET /startup→ 启动时序走完返回 200，期间 503（保护慢启动期�
 # run stage：gcr.io/distroless/static，USER nonroot，ENTRYPOINT ["/app","http"]
 # 镜像按 digest 引用：registry/app@sha256:...（禁止 :latest）
 ```
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

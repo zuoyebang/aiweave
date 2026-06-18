@@ -27,8 +27,8 @@
 - `## 1.` 并发模型总览（Goroutine 生命周期图 + 共享状态清单）
 - `## 2.` 共享状态注册表（核心）
 - `## 3.` 锁策略设计（粒度 / 顺序 / 超时）
-- `## 4.` Channel 与 Goroutine 池
-- `## 5.` 资源生命周期管理（连接池 / context cancel / fd）
+- `## 4.` Channel 与 Goroutine 池（含 §4.3 协程池容量登记 / §4.4 内联兜底提交器纪律登记）
+- `## 5.` 资源生命周期管理（连接池 / context cancel / fd / §5.4 异步任务 ctx 派生登记）
 - `## 6.` 危险操作清单（AI 必读）
 - `## 7.` 并发测试策略（race / 压测 / leak 检测）
 - `## 8.` 维护流程（含 B1 反向同步规则）
@@ -149,6 +149,35 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | `{worker-pool}` | {N} | 任务 channel buffer={M}，满时丢弃 | `defer recover()` + 错误日志 |
 ```
 
+### 6.3 §4.3 协程池容量登记（如有并行 fan-out）
+
+凡用协程池做并行 fan-out 的工程，必须在 §4.3 登记一张表，记录每个池"选了什么"——用途 / 容量 / 失败语义 / 是否阻塞模式。这是**表示记录槽位**（登记选定值），不是定容方法论。
+
+```markdown
+| 池名 | 用途 | 容量 `{cap}` | 失败语义 | 阻塞模式 |
+|------|------|-------------|---------|---------|
+| `{query-pool}` | {高优先级查询并行 fan-out} | `{cap}` | 阻塞排队 | 是 |
+| `{writeback-pool}` | {低优先级 best-effort 回写} | `{cap}` | 池满即丢 | 否 |
+```
+
+随表附结构性不变量（占位符化）：查询 / 编排类池**必须**阻塞模式（否则池满静默丢任务 + WaitGroup → 死锁）；best-effort 池小且"池满即丢"，按职责物理隔离 + 容量分级；容量值同步 `io_contract.md §6` 并与 `performance_contract.md §6.1` 对齐。
+
+> **容量怎么定不在此复制**：IO-bound worker 上限远大于核数、`max(Little 估算, 下游可承载)` 再以内存可控封顶的定量方法，真相源在 [`design-spec/03 §3.2`](../design-spec/03_concurrency_design.md)，§4.3 槽位必须反向引用它，本规范只规定"该有此登记表 + 登记选定值"。
+
+### 6.4 §4.4 内联兜底提交器纪律登记（如有协程池）
+
+凡用协程池的工程，必须在 §4.4 登记"统一提交入口 + 失败则内联执行"的提交器，含 grep 锚。这是**表示记录槽位**（登记入口 + 锚），不是方法论。
+
+```markdown
+| 提交入口 | 所在文件 | 失败兜底 | grep 锚 |
+|---------|---------|---------|---------|
+| `{Submit-fn}(pool, task)` | `{path}` | Submit 失败 → 当前 goroutine 内联同步执行 `task()` | `R-IO-RAW-SUBMIT` |
+```
+
+随表附结构性纪律（占位符化）：**禁止**裸 `{pool}.Submit(` / 裸 `go func()` 无界扇出；一切池任务提交走唯一封装入口。grep 锚 `R-IO-RAW-SUBMIT` 与 [`docs-spec/25`](25_io_aggregation_spec.md) 一致。
+
+> **为什么禁裸 Submit 不在此复制**：内联兜底"保证 task 永不丢、wg 永配平、根除 wg.Wait() 永久挂死"的推导，真相源在 [`design-spec/03 §3.3`](../design-spec/03_concurrency_design.md)，§4.4 槽位必须反向引用它。
+
 ---
 
 ## 7. §5 资源生命周期管理
@@ -186,6 +215,30 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | `os.File` | `defer f.Close()` | 上游使用 `defer` 模式 |
 | `http.Response.Body` | `defer resp.Body.Close()` | 即便 err != nil 也要 close（如 body != nil） |
 ```
+
+### 7.4 ctx 透传与异步任务派生（脱离请求生命周期 / 强制）
+
+与 §7.2「goroutine 生命周期终止（`ctx.Done()` 退出）」是**两个正交维度**：§7.2 管"监听退出信号怎么退出"，本节管"异步任务别被请求取消误杀"——一个是监听退出，一个是派生脱离，不可互相替代。
+
+> **决策真相源**：取消/超时传播 → ctx 透传；异步任务用派生 ctx 脱离请求生命周期，决策方法论在 [`design-spec/03 §3.1`](../design-spec/03_concurrency_design.md)（并发原语选型决策树）。本节只规定"该有此登记表 + 登记选定项"。
+
+两类 ctx 用法必须显式区分并登记：
+
+```markdown
+| ctx 类别 | 适用任务 | 取消传播 | 派生方式 |
+|---------|---------|---------|---------|
+| 透传请求 ctx | 取消/超时要传播到下游的请求级子任务 | 跟随请求一起取消 | 直接透传请求 `ctx` |
+| 派生 ctx（脱离） | 异步任务（缓存回写 / fire-and-forget / 脱离请求的后台写） | 不被请求取消波及 | `context.WithoutCancel` / 复制出新 root + 自带超时 |
+```
+
+**纪律（结构性）**：
+
+- 子任务必须**透传请求 `ctx`**——取消/超时能传播下去；
+- 但**异步任务**（缓存回写、fire-and-forget、脱离请求的后台写）必须用**派生 ctx**脱离请求生命周期；否则请求一结束，异步写回即被 `cancel` 杀掉、写了一半。
+- 派生 ctx 与请求 ctx 脱钩后**仍必须自带超时**（禁止无超时悬挂），并仍服从 §7.2 的退出路径要求。
+- 本纪律与 [`docs-spec/25 §4`](25_io_aggregation_spec.md)「聚合器异步写回需 detach（复制 ctx）脱离请求生命周期」同源一致——IO 聚合的异步写回是本纪律的一个落地场景。
+
+> **登记哪些异步任务用派生 ctx**：每个走 detach 的异步任务（如缓存回写）应在 `concurrency_safety.md §5.4` 的「异步任务 ctx 派生登记」槽位记一行；本规范只规定该登记表的存在。
 
 ---
 
@@ -247,7 +300,10 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | --- | --- |
 | 新增 `var x sync.Mutex` / `sync.RWMutex` / `sync.Map` | §2 共享状态注册表新增一行（变量 / 文件 / 访问方 / 保护机制） |
 | 新增 `go func()` / `errgroup.Go` | §1.1 Goroutine 生命周期图追加节点 + §5.2 Goroutine 泄漏防护登记 cancel 路径 |
+| 新增异步任务（缓存回写 / fire-and-forget）/ 出现 `context.WithoutCancel` / 复制新 root ctx | §5.4 异步任务 ctx 派生登记新增一行（透传 vs 派生、派生方式、自带超时）；与 docs-spec/25 §4 detach 同源 |
 | 新增 `chan T` / `make(chan T, N)` | §4.1 Channel 清单新增一行（方向 / buffer / 满时策略 / 关闭条件） |
+| 新增协程池 / 调整池容量或失败语义 | §4.3 协程池容量登记新增 / 更新一行（容量值同步 io_contract §6 / performance_contract §6.1） |
+| 新增 / 修改统一提交入口（含内联兜底） / 出现裸 `Pool.Submit(` | §4.4 内联兜底提交器纪律登记同步（grep 锚 `R-IO-RAW-SUBMIT`） |
 | 修改锁字段（新增 / 移除 / 重命名） | §3.1 锁粒度决策表同步；如形成多锁路径 → §3.2 加锁顺序约束更新 |
 | 新增 `defer xxx.Close()` 资源型 | §5.1 连接池或 §5.3 文件描述符登记 |
 | 引入 `goleak.IgnoreCurrent` 新登记项 | §9.3 常驻 goroutine 白名单同步 |
@@ -321,3 +377,8 @@ mu.Lock()
 defer mu.Unlock()
 cache[key] = resp.Body
 ```
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

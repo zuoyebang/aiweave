@@ -42,3 +42,8 @@ func insertOperationLog(ctx *gin.Context, action, targetType, targetId, detail s
 ## 5. 查询接口
 
 `GET /admin/log/list` 调用 `auditlog.QueryOperationLogs`。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

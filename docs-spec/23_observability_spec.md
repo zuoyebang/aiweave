@@ -133,11 +133,14 @@
   禁止使用实际请求路径
 ```
 
-### 7.3 Histogram bucket 约束（默认上限）
+### 7.3 Histogram bucket 设计（强制 / 桶按 SLO 设）
 
 ```markdown
-- bucket 数量 ≤ 15（库层面已限制 ≤ 20）
-- 推荐使用 LinearBuckets，避免指数级 bucket 浪费
+- **桶边界对齐 SLA 分位**：histogram 的 bucket 边界必须围绕本路径的 SLA / SLO 分位点（如 P50 / P90 / P99 目标值）布桶，使关键分位落在桶边界附近，
+  `histogram_quantile` 估算误差最小——桶按 SLO 设，而非套用通用等距/指数桶。SLA 数值真相源见 [`docs-spec/22 §1`](22_performance_contract_spec.md)；选型方法论见 [`design-spec/06 §3.3 / §7`](../design-spec/06_resilience_design.md)。
+- **label 带 status/mode**：关键路径 histogram 必须带 `status`（成功 / 失败等结果维度）与 `mode`（正常 / 降级等运行模式维度）label，
+  以便按结果 / 模式切片分位；两者均为**有界枚举**，不得退化为无界值（仍受 §3.2 禁止清单约束）。
+- bucket 数量 ≤ 15（库层面已限制 ≤ 20）；在 SLO 分位点之外的区间用尽量少的桶覆盖，避免指数级 bucket 浪费。
 ```
 
 ### 7.4 Metric 总数约束（默认上限）
@@ -237,7 +240,7 @@ service 方法伪码涉及发出指标的步骤必须使用 `[METRIC-EMIT: name{
 | --- | --- |
 | `helpers/metrics.go` 新增 `prometheus.MustRegister` / `NewCounterVec` 等 | §2 Metrics 采集范围对应分类新增一行；评估 cardinality 是否超 §3.1 上限 |
 | 新增 label 维度 | 检查是否命中 §3.2 禁止清单（`{actor-id}` / IP / ...）；命中即拒绝合并 |
-| 新增 Histogram bucket | §3.3 检查 bucket 数 ≤ 15；超出即报警 |
+| 新增 Histogram / bucket | §3.3 检查 bucket 数 ≤ 15；校验桶边界对齐 SLA 分位（桶按 SLO 设）；校验关键路径 histogram label 带 `status` / `mode` 且为有界枚举 |
 | 新增告警规则（YAML / Grafana） | §5.2 基础告警规则表新增一行 |
 | 修改 Metric 命名 | §4 命名约定校对 |
 
@@ -302,3 +305,8 @@ prometheus.NewCounterVec(opts, []string{"module", "result"})
 | 服务不健康 | `health{module="auth"} == 0` | 1 min | P0 |
 | 鉴权错误率突增 | `rate(http_request{url="/api/internal/auth/verify",code=~"5.."}[1m]) > 0.05` | 2 min | P1 |
 | 鉴权延迟劣化 | `histogram_quantile(0.99, http_request_cost) > 100` | 3 min | P1 |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

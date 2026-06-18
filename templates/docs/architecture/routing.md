@@ -68,3 +68,8 @@ controllers/http/{audience}/{module}/{action}.go
 ## 7. MQ 消费路由（如有）
 
 ## 8. 命令行任务路由
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

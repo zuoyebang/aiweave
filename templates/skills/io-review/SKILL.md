@@ -1,6 +1,6 @@
 ---
 name: io-review
-description: 审计代码的 IO 铁律。扫描新增/修改的代码，对照 docs/architecture/io_contract.md §2 两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）与 §3-§5 聚合并行约束，结合 docs/architecture/ai_dev_guide.md §10.2 grep 锚 rule-id 索引（R-IO-*）机械执行。命中标 🟡 待复核（信号级），最终判定权在人工 reviewer。
+description: 审计代码的 IO 铁律。扫描新增/修改的代码，对照 docs/architecture/io_contract.md §2 三条 IO 铁律（批量优先 / 禁止 N+1 / 禁止独立串行编排）与 §3-§5 聚合并行约束，结合 docs/architecture/ai_dev_guide.md §10.2 grep 锚 rule-id 索引（R-IO-*）机械执行。命中标 🟡 待复核（信号级），最终判定权在人工 reviewer。
 disable-model-invocation: true
 argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / loop-only（仅审计含循环的文件）；空则审计 git diff main..HEAD"
 ---
@@ -20,7 +20,7 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / loop-only（�
 
 读以下文件（按顺序）：
 
-1. `docs/architecture/io_contract.md` —— §1 IO 往返预算 + §2 两条铁律 + §2.1/§2.2 豁免登记 + §3 聚合器模式 + §4 并行原语 + §5 聚合约束
+1. `docs/architecture/io_contract.md` —— §1 IO 往返预算 + §2 三条铁律 + §2.1/§2.2 豁免登记 + §3 聚合器模式 + §4 并行原语 + §5 聚合约束
 2. `docs/architecture/ai_dev_guide.md` §10.7 —— grep 锚 rule-id 索引（R-IO-*）
 3. `docs/architecture/performance_contract.md` §4 —— 单次延迟预算（避免与 25 双源真相）
 4. `docs/BUILD_STATUS.md` §11 —— 约束清单状态轨道
@@ -159,3 +159,8 @@ grep 模式：'for [^{]*\{[\s\S]{0,300}?\.(Call|Invoke|Do|Post|Get)\(' 命中 ap
 - 与 `performance-review`：维度互补——22/performance 管单次延迟，25/io 管往返次数与并行化；两者常同时命中
 - 与 `concurrency-review`：聚合器的 worker pool / Slot 共享指针涉及并发安全，交叉复核
 - 与 `new-service` / `new-scheduled-task`：建议在生成"集合访问 / 多依赖编排"方法时自动触发
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

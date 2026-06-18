@@ -107,3 +107,8 @@ ctx.AbortWithStatusJSON(code int, obj interface{})
 ctx.Next()
 ctx.ClientIP() string
 ```
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

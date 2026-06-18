@@ -98,6 +98,8 @@ controllers/ → service/ 或 api/ → models/ 或 data/ 或 helpers/
 - **data/**：复杂数据访问封装
 - **helpers/**：资源初始化（MySQL / Redis / MQ / 熔断器等），提供全局客户端实例
 
+> **依赖严格单向、禁止反向 import**：下层（`models`/`data`/`helpers`）不得 import 上层（`service`/`controllers`），同层不得循环依赖。这让 `service` / `data` 成为可无副作用复用的纯单元（决策见 design-spec/06 §3.3）。
+
 ### 配置体系
 
 配置文件位于 `conf/` 目录：
@@ -174,6 +176,7 @@ tlog.Infof(ctx, "task completed: %s, processed=%d", taskName, count)
 
 **级别判定**：能自愈 → WARN；需人工介入 → ERROR。
 **敏感数据禁止打印**：EntitySecret、Token、密码绝对不输出到日志。
+**数据层禁日志**：`service` / `data` 层**不打日志**，靠 `return error` 上传，由 `controller` 在请求边界统一定级（可自愈 WARN / 需人工 ERROR）——同一方法被 HTTP/cron/job 多入口复用，自打会重复打点 + 级别误判（"未找到"在 DB 层是 `ErrRecordNotFound`，在 controller 层才是正常业务）。详见 `docs/architecture/logging.md` 分层日志纪律。
 
 ### Hooks 机制（强制 / L0 自动化防御层）
 
@@ -211,7 +214,7 @@ Hook 脚本在 `scripts/hooks/`，纯标准工具实现。配置规范见 `aiwea
 | **新增代码** | 必须新建/更新对应 md，并在 INDEX.md 登记 |
 | **删除代码** | 必须同步删除/更新对应 md，并更新 INDEX.md |
 
-### 19 条具体执行规则
+### 20 条具体执行规则
 
 #### 规则 1：修改代码前 — 查找关联文档
 按下方"范围判定表"逐条检查，确认本次修改涉及哪些 md。
@@ -259,6 +262,7 @@ md 与代码冲突时按规则 7 处理。
 - Service 方法伪码涉及事务 / Saga / 幂等 / 锁 / 不变量 → 必须使用 `[TXN-*]` / `[SAGA-STEP-N]` / `[IDEMPOTENT-CHECK]` / `[LOCK-*]` / `[INVARIANT-CHECK]` 统一标记
 - 新增写入类接口未设计幂等 Key → AI 必须主动追问"是否需要幂等保证"
 - 跨数据源写入未在 §2 登记 → AI 必须先补登记再生成代码
+- 强一致引入大量复杂度时 → 先评估**读写分离消幂等**（读判定 + 写执行拆两接口）/ **弱一致 + 边界兜底 + 监控**是否够用；高频数值变更热路径不加锁，越界在持久化边界 `GREATEST`/`LEAST` 夹断（见 `transaction_design.md §4.4/§5.2`）
 
 #### 规则 12：性能合约约束（强制）
 
@@ -303,13 +307,17 @@ md 与代码冲突时按规则 7 处理。
 - 下游调用必须显式设超时（禁止 0 或缺省）；本服务对下游设的超时必须 < 上游对本服务的超时（防级联）
 - 禁止 `_ = downstream.Call()` 静默吞下游错误；每条失败分支必须在 `cross_service_contract.md §4` 故障传播矩阵覆盖
 
-#### 规则 17：IO 聚合约束（强制 / 两条 IO 铁律）
+#### 规则 17：IO 聚合约束（强制 / 三条 IO 铁律）
 
+- **铁律零（批量优先）**：对一批 key 的查询必须用批量方法一次完成；数据层缺批量方法时**先补 `{...List}`**（分表按 shard 分组并行）再调用，禁止退化为循环单查
 - **铁律一（禁止 N+1）**：禁止在循环 / 递归内对同类资源逐条查询（DB / 缓存 / RPC / 外部 API）→ 必须循环外收集 key + 一次批量读 + `map` 装配
 - **铁律二（禁止独立串行编排）**：多个**互不依赖**的 IO 禁止逐个串行 await → 必须聚合器或扇出并行；仅当后查询入参真实依赖前查询结果时串行才合法
 - 多次跨实例 / 跨数据源读 → 必须走聚合器（按实例分组批量 + 并行回源 + 单飞合并 + 异步写回）
 - 聚合器 / single-flight 的共享结果指针 **只读**，禁止就地改字段（并发写竞争）→ 需改先深拷贝
 - 循环内单条写 → 必须批量 / pipeline
+- **反向纪律（防过度优化）**：同阶段仅 1 个查询 → 禁止套并行编排器；已被本地缓存命中的读 → 禁止再合并 Pipeline（绕过本地缓存反劣化）
+- **批量写极致**：插入/更新混合 → 批量 Upsert（`ON DUPLICATE KEY` / `ON CONFLICT`，一次往返免 select-then-write）；大批量装载（冷启 / 迁移 / 离线导入）→ `LOAD DATA` / `COPY`（见 `io_contract.md §5.7`）
+- **读路径覆盖索引**：高频查询优先覆盖索引（index-only scan 免回表）+ ICP（WHERE 非前缀条件在索引层先过滤）；同时不过度索引（见 `database_design.md §7.1/§7.2`）
 - 新增"集合访问资源 / 多依赖编排"方法 → 必须在 `io_contract.md §1` 登记往返预算、`§3/§4` 登记原语，伪码加 `[BATCH]` / `[PARALLEL]` 标记
 - 拿不准是否构成 N+1 / 伪串行 → 主动报告并建议聚合方案，不擅自串行
 
@@ -332,6 +340,14 @@ md 与代码冲突时按规则 7 处理。
 - 容器镜像运行层**禁止** root → `R-DEPLOY-ROOT`；编排清单**禁止**缺 requests/limits → `R-DEPLOY-NO-LIMITS`；镜像引用**禁止**可变 tag（`latest`），必须内容寻址
 - 含不兼容 Schema 变更的发布 → 回滚前必须确认 `database_design.md §8` 软兼容已就位
 - 详见 `docs/architecture/deployment.md`
+
+#### 规则 20：缓存设计纪律（强制）
+
+- **本地缓存准入**：放进 L1 进程内缓存的 key 必须同时满足"数据量有界且小 / 低变更 / 可容忍陈旧 / 高频读 / 非强一致 / 低基数判定类"六条准入；高基数 / 高频变更 / 强一致 / 大对象命中排除清单 → 退 L2 Redis（见 `cache_design.md §3.5`）
+- **回源保护三类分治**：并发 miss 同一 key → single-flight；同批 key 集体过期（雪崩）→ TTL 随机抖动；单热 key 到期悬崖（击穿）→ XFetch 概率提前重算。三类正交叠加，不可互相替代（见 `cache_design.md §2.10`）
+- **省内存编码**：集合类型主动把元素数 / 值长压在紧凑编码阈值内（`listpack` / `intset` / `ziplist`）；只需"计数 / 存在 / 集合运算"而非取回原值时用概率 / 位图结构（HyperLogLog / Bitmap / Roaring）（见 `cache_design.md §2.11/§2.12`）
+- **大 key / 热 key 治理 + 分片可扩展**：容量随分片线性扩展的三前提是"散列均匀 / 无大 key / 无热 key"。大 key 拆分桶 / 分块 + `UNLINK` 异步删；热 key 按读热（L1 挡读 / 副本打散）/ 写热（本地聚合 / 分片计数求和）分治；跨分片批量按分片分组并行，扩缩容用一致性哈希 / Cluster slot 迁移、禁裸 `mod N` 重哈希（见 `cache_design.md §9`）
+- **读写非对称降级**：缓存故障降级方向由"加速层 vs 数据源"决定——加速层 miss 静默穿透 DB，数据源 miss 快速失败（绝不穿透）；写永远 best-effort 失败静默（见 `cache_design.md §1.4`）
 
 ### 危险模式清单
 
@@ -371,10 +387,15 @@ md 与代码冲突时按规则 7 处理。
 | **循环内单条写** | 写放大 | 批量写 / pipeline | `R-IO-LOOP-WRITE` |
 | **多次跨实例读未走聚合器** | 往返失控 | 按实例分组批量 | `R-IO-NO-AGGREGATOR` |
 | **就地修改 single-flight / Slot 共享指针字段** | 并发写竞争 | 只读；改前深拷贝 | `R-IO-SHARED-MUTATE` |
+| **大 key 用 `DEL` 删除** | 阻塞 Redis 单线程 | `UNLINK` 异步惰性删 | `R-CACHE-BIGKEY-DEL` |
+| **热 key 砸单分片（无打散）** | 单分片 CPU 饱和，加分片分不走 | 读热 L1/副本打散、写热分片计数（见 cache_design.md §9.2） | `R-CACHE-HOTKEY-SINGLE-SHARD` |
+| **高基数 key 塞 L1 本地缓存** | 内存 × N 实例爆 + 实例发散 | 退 L2 Redis（见 cache_design.md §3.5 排除清单） | `R-CACHE-L1-HIGH-CARD` |
+| **扩缩容用裸 `mod N` 重哈希** | 全量重哈希、缓存大面积失效 | 一致性哈希（只迁 K/N）/ Cluster slot 迁移 | `R-CACHE-MOD-N-REHASH` |
 | **配置中心 / 资源凭据明文落盘或入库** | 凭据泄漏 | 对称加密密文存放 | `R-CONF-PLAINTEXT-CRED` |
 | **加密密钥 / 密码硬编码在代码** | 密钥泄漏 | 应用层 / 环境注入 | `R-CONF-HARDCODE-SECRET` |
 | **含密钥 / 明文凭据的文件入 git** | 仓库泄密 | `.gitignore` + 环境注入 | `R-CONF-SECRET-COMMIT` |
 | **配置中心拉取失败未 fail-fast** | 空/旧配置静默启动 | 拉取失败即终止进程 | `R-CONF-NO-FAILFAST` |
+| **高风险开关只靠配置档位（缺 `RUN_ENV` 运行档位）** | 危险开关可能线上误生效 | 配置档位 + `RUN_ENV` 双门禁 | `R-CONF-DANGER-SINGLE-GATE` |
 | **进程入口未注册终止信号 / 收到信号即硬退出** | 发布即掐断在途请求 | `signal.Notify` + 优雅关闭 | `R-SHUTDOWN-NO-SIGNAL` |
 | **优雅关闭缺在途排空（直接 `os.Exit`）** | 在途请求/消息丢失 | `Shutdown` + drain（带超时） | `R-SHUTDOWN-NO-DRAIN` |
 | **常驻 goroutine/消费者未接入关闭排空** | goroutine 泄漏/位点不提交 | 接入 cancel + 先提交位点 | `R-SHUTDOWN-LEAK-GOROUTINE` |
@@ -397,6 +418,7 @@ md 与代码冲突时按规则 7 处理。
 | `components/constants.go` | `docs/architecture/constants.md` |
 | `api/` | `docs/architecture/overview.md`（外部 API 部分） |
 | `models/` | `docs/schema/database_design.md` |
+| `data/` | `docs/schema/database_design.md §3.0`（数据访问层范式 / shard 并行 / 批量写） |
 | `service/{module}/` | `docs/service/{module}_service.md` + `service_design.md` |
 | `service/{audit-module}/` | `docs/architecture/audit_log.md` |
 | `controllers/http/{audience}/` | `docs/api/{audience}_interfaces.md` |
@@ -453,3 +475,8 @@ docs/
 ├── testing/             # 测试框架设计
 └── INDEX.md             # 文档索引
 ```
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

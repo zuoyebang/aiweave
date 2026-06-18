@@ -43,3 +43,8 @@ GET /{prefix}/internal/{module}/{action}
 #### 2.1.8 Service 调用关系
 #### 2.1.9 业务规则
 #### 2.1.10 边界情况
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

@@ -124,3 +124,8 @@ func {Action}(ctx *gin.Context) {
 ## N. 安全注意事项
 
 ## N+1. 性能注意事项
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

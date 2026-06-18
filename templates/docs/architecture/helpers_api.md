@@ -69,3 +69,8 @@ func (c *Client) Set(ctx *gin.Context, key string, value interface{}, expire int
 ## 5. Render 函数（如有）
 
 ## 6. 审计辅助函数（如有）
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

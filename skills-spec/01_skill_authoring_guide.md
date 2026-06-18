@@ -2,7 +2,7 @@
 
 > 规定 `.claude/skills/{name}/SKILL.md` 的标准结构、frontmatter 格式、步骤化要求、文档同步契约、测试同步契约。
 >
-> **本文同时是 18 个 Skill 的"公共章节真相源"**——所有 SKILL.md 中的公共部分（第 0 步前置 / 第 1 步必读 / 第 4 步文档同步 / 第 5 步测试同步 / 第 6 步验证）都从下方 §A-§E 抽取，每个 SKILL.md 只保留 Skill 特定内容。
+> **本文同时是 19 个 Skill 的"公共章节真相源"**——所有 SKILL.md 中的公共部分（第 0 步前置 / 第 1 步必读 / 第 4 步文档同步 / 第 5 步测试同步 / 第 6 步验证）都从下方 §A-§E 抽取，每个 SKILL.md 只保留 Skill 特定内容。
 
 ---
 
@@ -132,6 +132,7 @@ base.RenderJsonSucc(ctx, result)
 | io-review | docs-spec/25_io_aggregation_spec.md |
 | domain-invariant-check | docs-spec/09_service_design_spec.md §7 |
 | failure-path-review | docs-spec/21_distributed_transaction_spec.md §6 + 24_cross_service_contract_spec.md §4 |
+| design-solution | design-spec/00_design_overview.md + 01..06（六视角决策方法论，唯一对应 design-spec 而非 docs-spec 的 Skill） |
 
 ### 7. 不允许的写法
 
@@ -273,7 +274,7 @@ cd test && go test ./cases/{relevant}/...
 
 ---
 
-## 第三部分：18 个 Skill 速查表
+## 第三部分：19 个 Skill 速查表
 
 | Skill | 用途 | 触发示例 | 主 md |
 |-------|------|---------|-------|
@@ -295,3 +296,9 @@ cd test && go test ./cases/{relevant}/...
 | io-review | 审计代码 ↔ IO 铁律一致性 | `/io-review [scope]` | architecture/io_contract.md |
 | domain-invariant-check | 审计代码 ↔ 领域不变量一致性 | `/domain-invariant-check [scope]` | service/{module}_service.md §7 |
 | failure-path-review | 审计失败路径文档 / 测试覆盖完整性 | `/failure-path-review [scope]` | service/transaction_design.md §6 |
+| design-solution | 技术方案生成：过 design-spec 六视角产出 TRD（不生成代码） | `/design-solution {需求}` | design-spec/00..06 |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

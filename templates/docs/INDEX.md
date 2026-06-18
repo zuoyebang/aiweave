@@ -34,7 +34,7 @@
 | [architecture/concurrency_safety.md](architecture/concurrency_safety.md) | 并发安全：共享状态注册表 / 锁策略 / Channel / 危险操作清单（约束类，推荐启用） |
 | [architecture/performance_contract.md](architecture/performance_contract.md) | 性能合约：SLA / 热路径 / 内存预算 / 背压（约束类，推荐启用） |
 | [architecture/observability.md](architecture/observability.md) | 可观测性：服务级 Metrics / Cardinality 控制 / 告警规则（约束类，推荐启用） |
-| [architecture/io_contract.md](architecture/io_contract.md) | IO 合约：两条 IO 铁律 / 聚合器 / 并行编排原语 / 往返预算（约束类，强烈推荐） |
+| [architecture/io_contract.md](architecture/io_contract.md) | IO 合约：三条 IO 铁律 / 聚合器 / 并行编排原语 / 往返预算（约束类，强烈推荐） |
 | [architecture/cross_service_contract.md](architecture/cross_service_contract.md) | 跨服务合约：上下游依赖图 / 故障传播矩阵 / 接口版本（约束类，多服务时启用） |
 | [architecture/runtime_profile.md](architecture/runtime_profile.md) | 运行时基线：人工运行时数据快照（如有） |
 | [architecture/deployment.md](architecture/deployment.md) | 部署与运行时生命周期：部署产物 / 镜像约束 / 探针分层 / 优雅启停 / 发布回滚（约束类，强烈推荐） |
@@ -84,3 +84,8 @@
 | 日期 | 变更 | 触发事件 |
 |------|------|---------|
 | {YYYY-MM-DD} | 初版 | 项目启动 |
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

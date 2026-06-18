@@ -286,3 +286,8 @@ PostToolUse 在每次编辑 / 写入 `.go` 后，对改动文件机械跑 IO 铁
 可直接复制到新项目的骨架：
 
 `aiweave/templates/.claude/settings.local.json`（如有需要可生成）。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

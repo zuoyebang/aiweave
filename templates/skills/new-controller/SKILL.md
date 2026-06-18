@@ -111,3 +111,8 @@ cd test && go test -v ./cases/{audience}/... -run Test{Action}
 go build ./controllers/http/{audience}/{module}/...
 go vet ./controllers/http/{audience}/{module}/...
 ```
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

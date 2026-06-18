@@ -1,13 +1,14 @@
 # AIWeave — Go 后端工程「AI 原生 + AI 可重建」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.4-green.svg)](INDEX.md#变更日志)
+[![Version](https://img.shields.io/badge/version-v1.5-green.svg)](INDEX.md#变更日志)
 [![docs-spec](https://img.shields.io/badge/docs--spec-28-informational.svg)](docs-spec/)
-[![skills](https://img.shields.io/badge/skills-18-informational.svg)](templates/skills/)
+[![design-spec](https://img.shields.io/badge/design--spec-7-informational.svg)](design-spec/)
+[![skills](https://img.shields.io/badge/skills-19-informational.svg)](templates/skills/)
 [![Author](https://img.shields.io/badge/author-XuRuibo-orange.svg)](#10-作者与联系方式)
 
 > **作者**：XuRuibo &lt;hustxurb@163.com&gt;
-> 版本：v1.4 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
+> 版本：v1.5 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
 > 目标读者：项目架构师、AI Agent（Claude Code 等）
 
 **AIWeave**（AI 编织）—— 名字呼应规范的两面：
@@ -144,9 +145,18 @@ aiweave/
 │   ├── 22_performance_contract_spec.md      # 性能合约与热路径
 │   ├── 23_observability_spec.md             # 可观测性（Metrics 限服务级）
 │   ├── 24_cross_service_contract_spec.md    # 跨服务合约
-│   ├── 25_io_aggregation_spec.md            # IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止串行编排）
+│   ├── 25_io_aggregation_spec.md            # IO 极致与聚合并行（三条 IO 铁律：批量优先 / 禁止 N+1 / 禁止串行编排）
 │   ├── 26_config_center_spec.md             # 配置中心与凭据加密（配置上云 + 密钥不入库 + fail-fast）
 │   └── 27_deployment_runtime_spec.md        # 部署与运行时生命周期（部署产物 + 探针分层 + 优雅启停 + 发布回滚）
+│
+├── design-spec/             # 🆕 架构设计方法论（第三支柱 · 技术方案生成参考 · 编号 00-06）
+│   ├── 00_design_overview.md       # 设计方法论总纲（六视角清单 + 统一 lens 九节骨架 + 双源真相边界 + TRD 产物）
+│   ├── 01_io_design.md      ⭐     # IO 设计决策（形态决策树 + 默认选型升级 + 权衡矩阵；硬规则引用 docs-spec/25）
+│   ├── 02_data_model_design.md     # 数据建模决策（范式 / 索引 / 分库 / 演进；落 schema/）
+│   ├── 03_concurrency_design.md    # 并发模型决策（同步原语 / goroutine 编排；落 concurrency_safety）
+│   ├── 04_transaction_design.md    # 事务一致性决策（本地 vs 分布式 / 补偿 / 幂等；落 transaction_design）
+│   ├── 05_caching_design.md        # 缓存策略决策（缓存模式 / 失效一致性；落 cache/）
+│   └── 06_resilience_design.md     # 稳定性决策（熔断 / 限流 / 降级 + SLA 反推预算；落 circuit_breaker / performance_contract）
 │
 ├── skills-spec/             # .claude/skills/ 的规范
 │   ├── 00_skill_overview.md         # Skill 体系总览（频率、命名、调用顺序）
@@ -169,8 +179,8 @@ aiweave/
     │   ├── cache/
     │   ├── circuit_breaker/
     │   └── testing/
-    └── skills/              # 18 个 .claude/skills/{name}/SKILL.md 骨架
-                             # 4 类分组：创建 9 / 维护 2 / 审计 6 / 终极 1
+    └── skills/              # 19 个 .claude/skills/{name}/SKILL.md 骨架
+                             # 5 类分组：设计 1 / 创建 9 / 维护 2 / 审计 6 / 终极 1
 ```
 
 ---
@@ -357,3 +367,8 @@ limitations under the License.
 如有规范层面的疑问、落地实施经验分享、或希望深度协作，欢迎提 Issue 或邮件联系。
 
 > AIWeave 的所有规则都从真实后端工程实践沉淀而来；社区分享的实践案例会反哺规范的演进（详见 §7）。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

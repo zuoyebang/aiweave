@@ -432,3 +432,8 @@ helpers.CallLogPubClient.Pub(ctx, "call_log", msg)
 | `{核心动作}` | 状态上报 |
 | `generate{Key}()` | generateLogId() |
 
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

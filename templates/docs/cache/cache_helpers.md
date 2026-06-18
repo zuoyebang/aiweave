@@ -87,3 +87,19 @@ helpers.{Project}CacheClient（L2）
 | 数据变更（管理操作） | 主动 helpers.{LocalCache1}.Delete |
 | TTL 到期 | 自动失效 |
 | Redis 故障 | 本地缓存兜底 |
+
+## 8. 批量自动分批登记
+
+> 登记访问层 MGET / MSET 的自动分批阈值：单批超过 `{batch-threshold}` 个 key 时，访问层自动按 `{batch-threshold}` 切批走 Pipeline 合并（对调用方透明，调用方一次传全量 keys）。未命中 key 不进结果 map，调用方按 `_, ok` 分流。
+
+| 方法 | 自动分批阈值 `{batch-threshold}` | 分批方式 | 未命中处理 |
+|------|--------------------------------|---------|-----------|
+| `MGet(ctx, keys)` | `{batch-threshold}` | 超阈值按 `{batch-threshold}` 切批 Pipeline 合并 | 未命中 key 不进结果 map |
+| `MSet(ctx, items)` | `{batch-threshold}` | 超阈值按 `{batch-threshold}` 切批 Pipeline 合并 | — |
+
+> 决策方法（为何超阈值才分批、Pipeline 合并的取舍）见 [design-spec/05_caching_design.md §3.3](../../../design-spec/05_caching_design.md)。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

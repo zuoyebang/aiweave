@@ -24,14 +24,32 @@
 
 cache_design.md 必须按以下章节顺序组织：
 
-- `## 1.` 缓存架构总览（Redis-first 策略图 + 三级缓存层级 + 各类数据缓存路径表）
-- `## 2.` Redis Key 设计（按用途分组：热数据 / 状态数据 / 频率限制 / 分布式锁 / Flush 脏标记 + Hash 字段映射）
-- `## 3.` 本地缓存层（如有）（实例清单 / TTL / bucket 数 / 失效策略）
-- `## 4.` Flush 机制（Dirty Set / SPOP 算法 / 一致性校验 / 并行）
+- `## 1.` 缓存架构总览（Redis-first 策略图 + 三级缓存层级 + 各类数据缓存路径表 + **读写非对称降级语义登记表**）
+- `## 2.` Redis Key 设计（按用途分组：热数据 / 状态数据 / 频率限制 / 分布式锁 / Flush 脏标记 + Hash 字段映射；并含 **TTL 随机抖动登记 / 值编码登记 / Hash 分桶登记 / 回源保护三类分治登记 / 紧凑编码阈值登记 / 概率·位图结构登记**）
+- `## 3.` 本地缓存层（如有）（实例清单 / TTL / bucket 数 / 失效策略 + **本地缓存镜像登记**：镜像表清单 / WAL 读写池容量 / 三层 fail-open + **本地缓存准入条件 + 排除清单登记**）
+- `## 4.` Flush 机制（Dirty Set / SPOP 算法 / 一致性校验 / 并行 + **写路径削峰登记**：高频写 Redis-first + delta 增量 flush）
 - `## 5.` MQ 异步落库（如有）（消息结构 / 攒批策略 / 失败处理）
 - `## 6.` 缓存预热（触发时机 / 预热顺序 / 部分失败降级）
 - `## 7.` 缓存完整性巡检（巡检任务 / 检测算法 / 修复策略）
 - `## 8.` 与 MySQL 的同步矩阵
+- `## 9.` 分片可扩展登记（如有多分片 / 容量需线性扩展）（**大 key 治理 / 热 key 治理（读热·写热分治）/ 多分片利用**：容量线性律三前提的工程填空）
+
+> **高性能技术点的"表示记录槽位"（强制 / 登记位而非方法论）**：cache_design.md 除上述基础结构外，必须含以下登记位——工程在此填空"自己选了什么"，决策树 / 权衡 / 选型理由全部留在 [`design-spec/05_caching_design.md`](../design-spec/05_caching_design.md)，每个登记位末尾附一行反向引用，**不复制方法论**：
+>
+> | 登记槽位 | 落点章节 | 登记内容（占位符化） | 反向引用 |
+> | --- | --- | --- | --- |
+> | 读写非对称降级语义 | §1.4 | 每个缓存的定位（加速层 / 数据源）→ 降级方向（加速层 miss 静默穿透 / 数据源 miss 快速失败） | design-spec/05 §3.2 |
+> | TTL 随机抖动 | §2.x | base TTL + 抖动比例 `{jitter-pct}` | design-spec/05 §3.3 |
+> | 值编码 | §2.x | 是否压缩 + 小值不压阈值 `{min-compress-bytes}` + value 写入上限 `{max-value-KB}` + 1 字节自描述头 | design-spec/05 §3.3 |
+> | Hash 分桶 | §2.x | 桶数 `{bucket-N}` + key/field/value 形态 | design-spec/05 §3.3 |
+> | 回源保护三类分治 | §2.x | 逐 Key 登记武器（single-flight / TTL 抖动 / XFetch）+ XFetch `{delta}` / `{beta}` | design-spec/05 §3.4 |
+> | 紧凑编码阈值 | §2.x | 各集合类型 `listpack/intset/ziplist` 阈值（元素数 `{max-entries}` / 值长 `{max-value-len}`） | design-spec/05 §3.5 |
+> | 概率/位图结构 | §2.x | 哪些"计数/存在/集合"需求用 HyperLogLog / Bitmap / Roaring | design-spec/05 §3.5 |
+> | 本地缓存镜像 | §3.x | 镜像表清单 + WAL 读池 `min(max(2×NumCPU,16),64)` / 写池 `MaxOpenConns=1` + 三层 fail-open | design-spec/05 §3.1（并发细节指 design-spec/03 §9.4） |
+> | 本地缓存准入 + 排除清单 | §3.x | L1 进程内 KV 六条准入（有界小 / 低变更 / 容忍陈旧 / 高频读 / 非强一致 / 低基数）+ 排除清单（高基数 / 高频变更 / 强一致 / 大对象） | design-spec/05 §3.1 |
+> | 写路径削峰 | §4.x | 哪些高频写走 Redis-first + delta 增量 flush（周期 `{flush-interval}`） | design-spec/01 §3.2 + design-spec/04 |
+> | 分片可扩展 | §9 | 大 key 治理（识别 `{big-value}` / 拆分 / `UNLINK` / 检测）+ 热 key 治理（读热 L1/读副本/`{hotkey}:{0..K}` 打散；写热 本地聚合 flush/分片计数）+ 多分片（Cluster/一致性哈希 / Hash Tag 纪律 / 按分片分组并行 / 禁 `mod N`） | design-spec/05 §3.6 |
+> | 批量自动分批 | cache_helpers.md | MGET/MSET 超 `{batch-threshold}` 自动 Pipeline 分批 | design-spec/05 §3.3 |
 
 > **完整章节骨架见** [`templates/docs/cache/cache_design.md`](../templates/docs/cache/cache_design.md)。下面各节给出每个章节的填充精度与必填要素。
 
@@ -383,6 +401,10 @@ type {Example}Msg struct {
 ## 6. 调用关系总览
 
 ## 7. 缓存失效策略
+
+## 8. 批量自动分批登记
+   登记 MGET/MSET 超 `{batch-threshold}` 自动 Pipeline 分批的阈值与未命中处理；
+   决策方法反向引用 design-spec/05 §3.3
 ```
 
 ### 12.2 函数签名精度
@@ -484,3 +506,8 @@ flush 后随机抽取 N 个 key：
 | `{核心写入动作}` | 状态上报 |
 | `{核心写入维度}` | 未过期额度记录 |
 | `{校验步骤}` | 校验步骤 ⑪ |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

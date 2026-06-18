@@ -102,3 +102,8 @@ go test -v ./cases/{audience}/... -run Test{Action}
 - 检查 seed 数据是否匹配
 - 检查业务代码是否有 bug（**报告给用户而非改测试迎合 bug**）
 - 检查断言是否正确
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

@@ -566,3 +566,8 @@ W8 定期审计 — 跨组（兜底机制）
 | 漏"文档同步：..."声明 | L0 hooks(双向同步 Stop) + L3 §1.5 |
 
 防御层级的设计哲学：**L0 是自动拦截（不依赖自觉，机械执行），L1-L2 是事前预防（让 AI 不犯错），L3 是事中自检（一次 PR 内的自查），L4 是事后审计（PR 合并前的兜底），L5 是运行时证明（CI 阻断错误代码）**。任一层失效，下一层兜底。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

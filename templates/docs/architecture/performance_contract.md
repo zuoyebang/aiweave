@@ -88,6 +88,11 @@
 | `{ns}:info:*` | > 95% |
 | `{ns}:profile:*` | > 80% |
 
+### 4.4 连接池 / 超时基线指针（避免双源真相）
+
+- 各资源连接池与超时取值（`{maxOpen}` / `{conn-timeout}` / `{read-timeout}` / `{write-timeout}` / `{conn-max-lifetime}` / 重试）登记在 [`infrastructure.md §6`](infrastructure.md)（嵌入式库读写双池见 [`infrastructure.md §7`](infrastructure.md)）。本文只引用不复制。
+- 自适应熔断参数分级（采样数 / `percent` / 窗口，按组件特性差异化）登记在 [`circuit_breaker_design.md §2`](../circuit_breaker/circuit_breaker_design.md)。本文只引用不复制。
+
 ---
 
 ## 5. 并发性能与锁等待预算
@@ -160,3 +165,8 @@ framework API 见 [`docs/testing/testing_design.md §4.9`](../testing/testing_de
 ### 8.2 与 BUILD_STATUS §11 约束清单状态轨道的关系
 
 每条热路径条目（§2 一行）/ 每个基准测试（§7.1 一行）对应 BUILD_STATUS.md §11 "性能合约约束"类目的"已设计 / 已启用"计数。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

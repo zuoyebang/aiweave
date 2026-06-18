@@ -408,3 +408,8 @@ AI 完成增量同步后，必须产出：
 ## 11. 与 sync-feature-to-docs Skill 的关系
 
 本规范是 `aiweave/templates/skills/sync-feature-to-docs/SKILL.md` 的**蓝本**——Skill 是这套流程的**可机械执行版本**，规范是 Skill 的**理论依据**。修改规范时同步检查 Skill。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

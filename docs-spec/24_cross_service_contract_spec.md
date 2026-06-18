@@ -240,3 +240,8 @@
 | user-svc 熔断 | 连续失败 K 次 | verify 走降级 | 返回缓存 user 数据 | 2xx + `data.from_cache=true` |
 | MySQL core 故障 | 连接失败 | register 写入失败 | 立即返回 `ErrorDbInsert` | 5xx |
 | Redis miss | acc:info:userId 不存在 | verify 慢 | fallback MySQL；异步预热 Redis | 2xx 正常 |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

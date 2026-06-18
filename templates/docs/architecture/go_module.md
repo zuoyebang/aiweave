@@ -33,3 +33,8 @@ go 1.{version}
 1. `go mod init {module}`
 2. 添加直接依赖
 3. `go mod tidy`
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

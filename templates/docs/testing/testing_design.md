@@ -135,3 +135,8 @@ go test ./cases/... -v
 ```
 
 ## 10. 与 docs/ 的交叉引用
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

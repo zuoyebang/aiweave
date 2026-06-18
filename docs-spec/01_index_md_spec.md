@@ -166,3 +166,8 @@ INDEX.md 的章节划分应当与 `docs/` 子目录划分一致：
 ## 11. 完整模板
 
 参见 `aiweave/templates/docs/INDEX.md`。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

@@ -231,6 +231,11 @@
 | `R-PERF-FULL-COUNT` | 全表 COUNT(*) | 🟢 |
 | `R-RESOURCE-SLEEP-SYNC` | time.Sleep 做同步 | 🟢 |
 | `R-CACHE-LARGE-KEY` | Redis 大 Key（> 1MB） | 🟢 |
+| `R-CACHE-BIGKEY-DEL` | 大 key 用 `DEL` 阻塞单线程 | 🟢 |
+| `R-CACHE-HOTKEY-SINGLE-SHARD` | 热 key 流量全砸单分片 | 🟡 |
+| `R-CACHE-L1-HIGH-CARD` | 高基数 / 高频变更 key 塞进 L1 | 🟡 |
+| `R-CACHE-MOD-N-REHASH` | 分片用裸 `mod N` 重哈希 | 🟢 |
+| `R-CONF-DANGER-SINGLE-GATE` | 高风险开关缺 `RUN_ENV` 运行档位双门禁 | 🟢 |
 
 ### 11.5 性能合约约束（新增，对应 docs/architecture/performance_contract.md）
 
@@ -293,3 +298,8 @@
 - 新增 §2 / §3.1 / §4.1 等表内一行 → 对应类目"已设计条目数" +1
 - 校验代码 / 审计 Skill 联动后 → "已启用条目数" +1，状态可转 🟢
 - 启用某类约束的总开关→ 该类目状态从 ⬜ 转 🟢
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

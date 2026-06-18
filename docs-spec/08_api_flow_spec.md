@@ -419,3 +419,8 @@ func (c *checker) check{DisabledModule}(ctx *gin.Context, ...) *ServiceError {
 | `{决策函数}` | pickMode |
 | `{module-N}/{action}.go` | billing/report.go |
 
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

@@ -20,12 +20,17 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 
 ---
 
-## 2. Skill 体系全景（18 个 Skill / 4 类分组）
+## 2. Skill 体系全景（19 个 Skill / 5 类分组）
 
 > 设计意图：`doc-sync-check` 审计的是"代码 ↔ 文档一致性"；其他审计类 Skill 审计的是"代码 ↔ 约束一致性"。两者维度不同，互补不替代——前者保证可重建（AIWeave 第一性目标），后者保证运行时正确。
 
 ```
-┌─── 创建类（A 建设模式 / B 增量场景共用） 9 个 ──────────────────────┐
+┌─── 设计类（A0 设计阶段 / design-spec 驱动） 1 个 ───────────────────┐
+│                                                                  │
+│  design-solution      输入需求 → 过六视角 → 产出技术方案(TRD)      │
+│                       （docs↔代码生命周期最上游；不生成代码/docs）  │
+│                                                                  │
+├─── 创建类（A 建设模式 / B 增量场景共用） 9 个 ──────────────────────┤
 │                                                                  │
 │  new-model            从 DDL 生成 GORM Model struct               │
 │  new-service          从伪代码生成 Service 方法                   │
@@ -58,9 +63,10 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**为什么分 4 类**：
+**为什么分 5 类**：
 
-- **创建** vs **维护** vs **审计** vs **终极**：按"是否生成代码"+"是否常态使用"两个维度交叉
+- **设计** vs **创建** vs **维护** vs **审计** vs **终极**：按"在生命周期的位置"+"是否生成代码"+"是否常态使用"交叉
+- **设计类**（A0 上游）不生成代码、不写 docs/，只把需求过 design-spec 六视角产出技术方案(TRD)，是后续一切的前置决策——它是 `design-spec/` 支柱的执行器（对应关系见 [`01_skill_authoring_guide.md`](01_skill_authoring_guide.md) §6）
 - **创建类**生成新代码（A 模式 + B 模式新增场景）
 - **维护类**不生成代码，只反向同步文档与索引（B 模式日常）
 - **审计类**不生成代码，只检查一致性（B 模式 / 发版前兜底）
@@ -87,6 +93,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 
 | 模式 | 主要 Skill |
 |------|-----------|
+| **A0 design**（技术方案生成 / 上游） | **`/design-solution`**（过 design-spec 六视角产出 TRD，再进 A1 / B1） |
 | **A1 forward**（从零开发） | `/new-*` 系列按 Stage 顺序调用 + `/new-test` |
 | **A2 rebuild**（从 docs 重建） | `/rebuild-from-docs {scope}` 按 Stage 顺序 |
 | **B1 sync-feature**（需求迭代后） | **`/sync-feature-to-docs`** + `/doc-sync-check` |
@@ -228,4 +235,9 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 |------|------|
 | `aiweave/skills-spec/01_skill_authoring_guide.md` | 编写 Skill 的标准结构与最佳实践 |
 | `aiweave/skills-spec/02_settings_local_json_spec.md` | settings.local.json 的 permissions / hooks 配置 |
-| `aiweave/templates/skills/{name}/SKILL.md` | 18 个 Skill 的可执行骨架（同时充当规范文档；公共章节真相源在 01_skill_authoring_guide.md §A-§E） |
+| `aiweave/templates/skills/{name}/SKILL.md` | 19 个 Skill 的可执行骨架（同时充当规范文档；公共章节真相源在 01_skill_authoring_guide.md §A-§E） |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

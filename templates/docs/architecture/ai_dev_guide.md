@@ -22,7 +22,7 @@
 | 文档索引 | `docs/INDEX.md` | 文档目录 |
 | 实现进度 | `docs/BUILD_STATUS.md` | 状态 |
 
-## 3. Skill 体系（18 个）
+## 3. Skill 体系（19 个）
 
 详见 `.claude/skills/`。
 
@@ -91,6 +91,9 @@
 | 幂等性设计 | [`transaction_design.md §4`](../service/transaction_design.md) | 🟢 |
 | 最终一致性窗口 | [`transaction_design.md §5`](../service/transaction_design.md) | 🟢 |
 | 失败路径全景图 | [`transaction_design.md §6`](../service/transaction_design.md) | 🟢 |
+| 读写分离消幂等（读判定 + 写执行拆两接口） | [`transaction_design.md §4.4`](../service/transaction_design.md) | 🟢 |
+| 弱一致 + 边界兜底（`GREATEST`/`LEAST` 夹断）| [`transaction_design.md §5.2`](../service/transaction_design.md) | 🟢 |
+| delta 增量 flush 一致性不变量 | [`transaction_design.md §5.3`](../service/transaction_design.md) | 🟢 |
 
 ### 8.3 领域不变量约束
 
@@ -178,10 +181,12 @@
 
 | 约束类 | 文档锚点 | 状态 |
 |--------|---------|------|
-| 两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）+ 豁免登记 | [`io_contract.md §2`](io_contract.md) | 🟢 |
+| 三条 IO 铁律（批量优先 / 禁止 N+1 / 禁止独立串行编排）+ 豁免登记 | [`io_contract.md §2`](io_contract.md) | 🟢 |
 | 聚合器模式（收集→批量读→并行回源→单飞→异步写回） | [`io_contract.md §3`](io_contract.md) | 🟢 |
 | 并行编排原语（聚合器 / 扇出 / 流水线） | [`io_contract.md §4`](io_contract.md) | 🟢 |
 | 数据访问聚合约束（批量读写 / 预加载 map / JOIN vs 多查询） | [`io_contract.md §5`](io_contract.md) | 🟢 |
+| 批量写极致（插入/更新混合 → Upsert；大批量装载 → `LOAD DATA`/`COPY`） | [`io_contract.md §5.7`](io_contract.md) | 🟢 |
+| 读路径覆盖索引 + ICP + 不过度索引 | [`database_design.md §7.1`](../schema/database_design.md) / [`§7.2`](../schema/database_design.md) | 🟢 |
 | IO 往返预算 + IO 回归测试（计数断言无 N+1） | [`io_contract.md §1`](io_contract.md) + [`§7`](io_contract.md) | 🟢 |
 
 ### 8.12 配置中心与凭据加密约束（v1.3 / 如启用配置上云）
@@ -204,6 +209,16 @@
 | 发布回滚策略 + 资源配额弹性 | [`deployment.md §6`](deployment.md) + [`§7`](deployment.md) | ⬜ / 🟢 视工程启用 |
 
 > 运行时基线属于"AI 不直接感知"维度，启用与否由工程负责人决定（详见 INDEX.md §0 采纳进度）。
+
+### 8.14 缓存设计约束（如启用本地缓存 / 多分片）
+
+| 约束类 | 文档锚点 | 状态 |
+|--------|---------|------|
+| 本地缓存准入条件（六条须同时满足）+ 排除清单 | [`cache_design.md §3.5`](../cache/cache_design.md) | ⬜ / 🟢 视工程启用 |
+| 回源保护三类分治（single-flight / TTL 抖动 / XFetch 概率提前重算） | [`cache_design.md §2.10`](../cache/cache_design.md) | ⬜ / 🟢 视工程启用 |
+| 紧凑编码阈值（listpack / intset / ziplist）+ 概率/位图结构（HLL / Bitmap / Roaring） | [`cache_design.md §2.11`](../cache/cache_design.md) / [`§2.12`](../cache/cache_design.md) | ⬜ / 🟢 视工程启用 |
+| 大 key 治理（拆分 + `UNLINK`）/ 热 key 读写分治 / 多分片可扩展（Hash Tag / 禁 `mod N`） | [`cache_design.md §9`](../cache/cache_design.md) | ⬜ / 🟢 视工程启用 |
+| 读写非对称降级（加速层 miss 穿透 / 数据源 miss 快速失败；写 best-effort 静默） | [`cache_design.md §1.4`](../cache/cache_design.md) | ⬜ / 🟢 视工程启用 |
 
 ---
 
@@ -253,6 +268,10 @@
 | `R-PERF-FULL-COUNT` | 全表 COUNT(*) | `COUNT\(\*\)\s+FROM` 且无 WHERE / WHERE 列无索引 | 小表（< 1 万行）/ 后台批处理 | 🟢 |
 | `R-RESOURCE-SLEEP-SYNC` | time.Sleep 做同步 | `time\.Sleep\(` 出现在 `go func` 或 `for` 内 | 重试退避（指数退避） / 测试代码 | 🟢 |
 | `R-CACHE-LARGE-KEY` | Redis 大 Key（> 1MB） | `\.Set\(` 紧随大对象序列化 / SADD 一次 > 1000 元素 | 显式分片 | 🟢 |
+| `R-CACHE-BIGKEY-DEL` | 大 key 用 `DEL` 阻塞单线程 | `\.Del\(` 作用于大 value / 海量元素集合 key | 已用 `UNLINK` / 小 key | 🟢 |
+| `R-CACHE-HOTKEY-SINGLE-SHARD` | 热 key 流量全砸单分片（加分片分不走） | 选型 / 人工审查：单 key 超高频无打散 | L1 / 读副本 / `{hotkey}:{i}` 打散 / 分片计数（cache_design §9.2） | 🟡 |
+| `R-CACHE-L1-HIGH-CARD` | 高基数 / 高频变更 key 塞进 L1 进程内 | L1 写入 key 为 per-entity / 组合键 / 计数类 | 满足 L1 准入（万级 + 低频变更，cache_design §3.5） | 🟡 |
+| `R-CACHE-MOD-N-REHASH` | 分片节点选择用裸 `mod N`（扩缩容全量重哈希） | `%\s*len\(.*[Nn]ode` / `%\s*nodeCount` 用于节点选择 | 一致性哈希 / Cluster slot 迁移（cache_design §9.3） | 🟢 |
 
 ### 10.3 事务 / 幂等类
 
@@ -296,6 +315,7 @@
 | `R-IO-NO-AGGREGATOR` | 多次跨实例读未走聚合器 | 同函数 ≥ N 次跨实例 / 跨表读未聚合 | 已用聚合器（Preload/Fetch） | 🟢 |
 | `R-IO-LOOP-RPC` | 循环内单条 RPC / 外部调用 | `for [^{]*\{[\s\S]{0,300}?\.(Call\|Invoke\|Do)\(` 命中 api/ | 批量接口 / 并行扇出 | 🟢 |
 | `R-IO-SHARED-MUTATE` | 就地修改 single-flight / Slot 共享指针字段 | `\.Value\(\)` 后对返回指针字段赋值 | 已深拷贝 | 🟢 |
+| `R-IO-RAW-SUBMIT` | 裸提交协程池（绕过内联兜底统一入口，可致 WaitGroup 挂死） | `\.Submit\(` 未走统一兜底提交器 | 已走"失败内联兜底"统一入口（concurrency_safety.md §4.4） | 🟢 |
 
 ### 10.8 配置安全类（v1.3 新增 / 由 `doc-sync-check` 触发）
 
@@ -305,6 +325,7 @@
 | `R-CONF-HARDCODE-SECRET` | 密钥 / 密码硬编码在代码 | 源码含字面量 `key := "..."` / `password := "..."`（长度 ≥ 16 的字面量） | 测试 fixture / 从环境读取 | 🟢 |
 | `R-CONF-SECRET-COMMIT` | 含密钥 / 明文凭据的文件入 git | git diff 含密钥文件且不在 `.gitignore` | — | 🟢 |
 | `R-CONF-NO-FAILFAST` | 配置中心拉取失败未 fail-fast | 拉取调用后 `if err != nil` 分支无 `panic` / `os.Exit` / `Fatal` / `return err`（启动期） | 非启动期 / 有降级设计且已登记 | 🟢 |
+| `R-CONF-DANGER-SINGLE-GATE` | 高风险开关只靠配置档位、缺运行档位（`RUN_ENV`）硬门禁 | 危险开关判定无 `RUN_ENV` / 运行环境校验叠加 | 配置档位 + `RUN_ENV` 双门禁（config.md §10） | 🟢 |
 
 ### 10.9 部署与运行时生命周期类（v1.4 新增 / 由 `doc-sync-check` 触发）
 
@@ -323,3 +344,8 @@
 - 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）
 - 长期 0 命中的规则 → 评估是否仍有价值；可降级为"可选规则"
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

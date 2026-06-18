@@ -120,3 +120,8 @@ argument-hint: "[scope] 可选：当前 PR / {module} / {module}/{Method}；空�
 - 与 `domain-invariant-check`：并列；不变量违反与失败路径缺失常同根
 - 与 `new-saga-step`：新生成 Saga 步骤后建议自动触发 `/failure-path-review`
 - 与 `performance-review`：HOT-PATH 失败路径需协作审计
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

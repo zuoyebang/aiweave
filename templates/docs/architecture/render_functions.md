@@ -37,3 +37,8 @@ func renderInternalResponse(ctx *gin.Context, err error, data interface{}) {
 ## 5. 设计决策
 
 为什么有多种格式（历史原因 / 网关协议）。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

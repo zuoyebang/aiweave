@@ -105,3 +105,18 @@ func Decrypt(key []byte, token string) (string, error)
   → Sync 拉取落盘 → 本地解析为全局配置变量 → 初始化资源
 任一步失败 → fail-fast（进程退出），禁止静默空/旧配置启动
 ```
+
+## 10. 危险开关双门禁登记
+
+> 规范来源：`aiweave/docs-spec/26_config_center_spec.md §7.5`；决策方法论见 `aiweave/design-spec/06_resilience_design.md §3.3`（危险开关双门禁）。
+> 高风险开关（跳缓存 / 强制降级 / 危险调试开关等）必须 **配置档位 + 运行档位 `RUN_ENV` 双门禁叠加**，两道门同时满足才放行，绝不可能在线上误生效。仅配置档位单门禁即违规（`R-CONF-DANGER-SINGLE-GATE`）。
+> 本工程每个高风险开关在此登记一行；无危险开关可标 🚫 不涉及。
+
+| 开关名 | 门一·配置档位条件 | 门二·运行档位 `RUN_ENV` 条件 | 落点（代码路径） |
+|--------|------------------|------------------------------|------------------|
+| {危险开关-A} | {配置中心档位 / 请求标记，如仅 {test-audience} 允许} | {RUN_ENV 硬校验，如仅非生产 env 生效} | {path/to/gate} |
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

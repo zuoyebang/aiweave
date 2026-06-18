@@ -172,3 +172,8 @@ grep 模式：'time\.Sleep\(' 出现在 `go func` 或 `for` 内
 - 与 `concurrency-review`：并列的审计类 Skill；并发与性能问题常相关
 - 与 `doc-sync-check`：审计维度互补
 - 与 `new-service`：建议在 `/new-service` 生成涉及热路径方法时自动触发
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

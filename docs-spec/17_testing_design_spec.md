@@ -399,3 +399,8 @@ API 列表**必须完整**——AI 写测试用例时只能从这里取签名。
 | 修改 seed 数据 | seed/README.md + 受影响的 cases/*_test.go |
 | 调整覆盖率目标 | §5.4 + CI 配置 |
 | 新增 Stage | §6 协同表 |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

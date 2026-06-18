@@ -147,3 +147,8 @@ argument-hint: <需求标识或简述> 例如 "feat-batch-export" 或 "新增批
 ## 第 7 步：验证
 
 无独立验证命令；输出即为产出。建议用户在 PR 合并前再跑一次 `/doc-sync-check all` 兜底。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

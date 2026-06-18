@@ -110,3 +110,8 @@ argument-hint: "[scope] 可选：当前 PR / {module} / {module}/{Method}；空�
 - 与 `doc-sync-check`：审计维度互补（前者代码 ↔ 文档；本 Skill 代码 ↔ 领域不变量约束）
 - 与 `new-service`：建议在 `/new-service` 生成涉及业务规则的方法后自动触发 `/domain-invariant-check`
 - 与 `failure-path-review`：并列的审计 Skill；不变量违反往往是失败路径未覆盖的根因
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

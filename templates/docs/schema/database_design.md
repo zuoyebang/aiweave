@@ -36,7 +36,50 @@
 
 ### 2.3 容量与性能预估
 
+### 2.4 各库读写模式 / 持久化级别登记
+
+> 工程填空：每个物理库登记读写模式 + 持久化 / 复制级别（把写风暴库与强一致核心库的故障域分开）。
+> 决策方法见 [design-spec/02_data_model_design.md §3.2](../../../design-spec/02_data_model_design.md)。
+
+| 库名 | 量级 | 读写模式 | `innodb_flush_log_at_trx_commit` | 复制级别 |
+|------|------|----------|----------------------------------|----------|
+| `db_{example_core}` | {量级} | {读为主 / 读写均衡 / 写为主} | {1=强一致 / 2=允许丢 1s} | {半同步 / 异步} |
+| `db_{example_log}` | {量级} | {读写模式} | {持久化级别} | {复制级别} |
+
 ## 3. 表结构 DDL
+
+### 3.0 数据访问层范式 / 分表路由登记
+
+> 工程填空记录（非方法论）：登记每表 Repository 四件套的实现情况、分表算法收敛函数、shard 分组并行约定。
+> 决策方法见 [design-spec/02_data_model_design.md §3.1 / §3.2 / §3.3](../../../design-spec/02_data_model_design.md)。
+
+#### 3.0.1 Repository 四件套登记
+
+每表 Repository 标准形态 = 私有纯查询 `getFromDB`（无副作用真相源）+ 公有缓存编排 `GetBy{X}` + 预取注册 `Preload` + 成对批量 `GetBy{X}List`。登记每表已实现哪几件：
+
+| 表名 | `getFromDB`（私有纯查询） | `GetBy{X}`（缓存编排） | `Preload`（预取注册） | `GetBy{X}List`（批量） |
+|------|--------------------------|------------------------|----------------------|------------------------|
+| `{table_1}` | {已实现 / —} | {已实现 / —} | {已实现 / —} | {已实现 / —} |
+| `{table_2}` | {已实现 / —} | {已实现 / —} | {已实现 / —} | {已实现 / —} |
+
+#### 3.0.2 分表路由收敛 + shard 分组并行登记
+
+| 登记项 | 取值（工程填空） |
+|--------|------------------|
+| 分表算法唯一函数 | `{ModTable(base, shardKey, count, width)}`（分表逻辑只此一处；缓存 key 用逻辑表名，物理名只查询期算） |
+| 已收敛到唯一函数的表 | {表清单 / —} |
+| 批量查询 shard 分组约定 | 按 shard 分组、只查有请求的物理表、单 shard 直查 / 多 shard 并行 IN（不广播全表） |
+| 已落地分组并行的批量方法 | {方法清单 / —} |
+
+#### 3.0.3 批量写方法登记
+
+> 工程填空记录（非方法论）：登记数据访问层的批量写方法，取代"select 判有无再分别 insert/update"与"循环单条写"。批量 Upsert 用 `ON DUPLICATE KEY UPDATE`（MySQL）/ `ON CONFLICT DO UPDATE`（PG）一次往返；大批量装载用 `LOAD DATA` / `COPY`。
+> 决策方法见 [design-spec/02_data_model_design.md §3.1](../../../design-spec/02_data_model_design.md)（数据访问层范式末项）；写路径极致编排见 [design-spec/01_io_design.md §3.2](../../../design-spec/01_io_design.md)。
+
+| 表名 | 批量 Upsert 方法 | 冲突子句 | 大批量装载 | 落地状态 |
+|------|------------------|----------|------------|----------|
+| `{table_1}` | `{...UpsertList}` | `{ON DUPLICATE KEY UPDATE / ON CONFLICT DO UPDATE / —}` | `{LOAD DATA / COPY / —}` | {已实现 / —} |
+| `{table_2}` | `{...UpsertList}` | `{冲突子句 / —}` | `{装载方式 / —}` | {已实现 / —} |
 
 ### 3.1 {table_1}
 
@@ -133,8 +176,64 @@ CREATE TABLE `{table_1}` (
 
 ### 6.5 动态分表（如有）
 
+### 6.6 对外 ID 模型登记
+
+> 工程填空记录（非方法论）：登记真实主键不外泄、对外 ID 的加密形态，以及"定位 shard 的字段 vs 唯一标识的字段"区分（两者混用会算错 shard、查错物理表）。
+> 决策方法见 [design-spec/02_data_model_design.md §6](../../../design-spec/02_data_model_design.md)；确定性加密对外 ID 细节见 [design-spec/05_caching_design.md §9.5](../../../design-spec/05_caching_design.md)。
+
+| 登记项 | 取值（工程填空） |
+|--------|------------------|
+| 真实主键 | `{真实主键字段}`（仅内部用，**禁止**出现在对外响应） |
+| 对外 ID 形态 | {确定性加密密文 / —}（可缓存可比较；解密失败统一降级"查无结果"） |
+| 用于定位 shard 的字段 | `{shard-key 字段}`（参与 `ModTable` 取模，决定物理表） |
+| 用于唯一标识的字段 | `{identity 字段}`（业务唯一键 / 主键，定位行） |
+| 混用风险登记 | {若 shard-key 与 identity 不同源，说明各查询用哪个 / —} |
+
 ## 7. 索引设计
 
 每张表的索引清单（详见 §3.X）。
 
+### 7.1 高频查询索引支撑登记
+
+> 工程填空记录（非方法论）：为每条高频查询登记支撑索引及其优化形态——覆盖索引（所需列全进索引，index-only scan **免回表**）/ 索引下推 ICP（WHERE 非前缀条件在索引层先过滤，少回表行数）/ 前缀索引（长列只索前 N 字符）/ 复合索引列序（最左前缀：等值列在前、范围列在后）。
+> 决策方法见 [design-spec/02_data_model_design.md §3.5](../../../design-spec/02_data_model_design.md)；读路径"消灭往返"延伸见 [design-spec/01_io_design.md §3.1](../../../design-spec/01_io_design.md)。本节只登记选择结果，不复制决策树。
+
+| 高频查询（语义） | 支撑索引 | 索引列序（最左前缀） | 覆盖索引 | ICP | 前缀索引 |
+|------------------|----------|----------------------|----------|-----|----------|
+| `{查询语义-1}` | `{idx_name}` | `{(等值列, 范围列)}` | {是 index-only / 否} | {是 / 否} | `{col}({N}) / —` |
+| `{查询语义-2}` | `{idx_name}` | `{列序}` | {是 / 否} | {是 / 否} | `{col}({N}) / —` |
+
+### 7.2 不过度索引登记（写放大约束）
+
+> 每个二级索引 = 写放大 + 额外空间。按查询路径建索引，定期审无用索引。登记本表索引总数与一句话取舍理由。
+
+| 表名 | 二级索引数 | 写放大评估 | 无用索引审计周期 | 备注 |
+|------|-----------|-----------|------------------|------|
+| `{table_1}` | {N} | {可接受 / 需精简} | {周期} | {取舍一句话 / —} |
+
 ## 8. 数据生命周期（如有过期/归档）
+
+
+## 9. 参考示例（仅示意，落地按业务替换）
+
+> ⚠️ 以下为示意：§1-§8 登记槽位已用占位符表达；本节具体 SQL 仅示意 §3.0.3 批量写 / §7.1 覆盖索引的写法，落地按业务表名 / 列名替换，不得照搬作为规范。完整决策示例见 [design-spec/02 §9.6](../../../design-spec/02_data_model_design.md)。
+
+```sql
+-- 批量 Upsert（一次往返，取代 select 判有无再 insert/update）
+INSERT INTO t (k, v) VALUES (?, ?), (?, ?)
+  ON DUPLICATE KEY UPDATE v = VALUES(v);          -- MySQL
+-- PostgreSQL: ON CONFLICT (k) DO UPDATE SET v = EXCLUDED.v;
+
+-- 大批量装载
+LOAD DATA LOCAL INFILE 'x.csv' INTO TABLE t;      -- MySQL
+-- PostgreSQL: COPY t (k, v) FROM STDIN;
+
+-- 覆盖索引：所需列 (b,c) 全在索引 (a,b,c) → EXPLAIN 显示 Using index（不回表）
+CREATE INDEX idx_cover ON t(a, b, c);
+SELECT b, c FROM t WHERE a = ?;
+-- 前缀索引（长列）：CREATE INDEX idx_prefix ON t(longcol(20));
+```
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

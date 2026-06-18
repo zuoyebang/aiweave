@@ -146,7 +146,14 @@
 |---------|----------|---------|
 | `{ns}:info:*`（热数据） | > 95% | Redis stats |
 | `{ns}:profile:*`（次热） | > 80% | — |
+
+### 4.4 连接池 / 超时基线指针（仅引用，避免双源真相）
+
+- 各资源连接池与超时取值（`{maxOpen}` / `{conn-timeout}` / `{read-timeout}` / `{write-timeout}` / `{conn-max-lifetime}` / 重试）登记在 [`infrastructure.md §6`](infrastructure.md)（嵌入式库读写双池见 [`infrastructure.md §7`](infrastructure.md)）；本文只引用不复制。
+- 自适应熔断参数分级（采样数 / `percent` / 窗口）登记在 [`circuit_breaker_design.md §2`](../circuit_breaker/circuit_breaker_design.md)；本文只引用不复制。
 ```
+
+> §4.4 是**指针槽位**而非新增基线真相源——连接池基线落 `infrastructure.md`（[`docs-spec/04 §3`](04_architecture_overview_spec.md)），自适应熔断参数落 `circuit_breaker_design.md`（[`docs-spec/12`](12_circuit_breaker_spec.md)）。本文在 §4.4 仅保留一行指针，杜绝双源真相。
 
 ---
 
@@ -313,3 +320,8 @@ L1 的熔断器参数（K / 窗口 / 采样数）**不写在本文档**，详见
 | 鉴权链（client → gateway → 本服务 → Redis） | 200 ms | 30 ms | 5 ms |
 
 关系：30 + 5 = 35 < 200 × 0.8 = 160 ✅
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

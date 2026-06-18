@@ -85,6 +85,33 @@
 |------|------|---------|---------------|
 | `{worker-pool}` | {N} | 任务 channel buffer={M}，满时丢弃 | `defer recover()` + 错误日志 |
 
+### 4.3 协程池容量登记
+
+> 一张表登记每个池的选定容量与失败语义。**容量怎么定**（IO-bound 的 worker 上限远大于核数；`max(Little 估算, 下游可承载)` 再以内存可控封顶）见 [design-spec/03 §3.2 协程池容量定量方法](../../../design-spec/03_concurrency_design.md)；本处只登记选定值。
+
+| 池名 | 用途 | 容量 `{cap}` | 失败语义 | 阻塞模式 |
+|------|------|-------------|---------|---------|
+| `{query-pool}` | {高优先级查询并行 fan-out} | `{cap}` | 阻塞排队 | 是 |
+| `{orchestrate-pool}` | {跨模块编排 fan-out} | `{cap}` | 阻塞排队 | 是 |
+| `{writeback-pool}` | {低优先级 best-effort 回写} | `{cap}` | 池满即丢 | 否 |
+
+**不变量（结构性）**：
+- 查询 / 编排类池**必须**阻塞模式（禁非阻塞 / 丢弃）；否则池满静默丢任务 + `WaitGroup` → 死锁。
+- best-effort 池要小且"池满即丢"，绝不挤占查询能力（按职责物理隔离 + 容量分级）。
+- 容量值同时登记到 `io_contract.md §6` 并与 `performance_contract.md §6.1` 对齐。
+
+### 4.4 内联兜底提交器纪律登记
+
+> 登记本工程"统一提交入口 + 失败则内联执行"的提交器。**为什么禁裸 Submit**（保证 task 永不丢、`wg` 永配平，根除 `wg.Wait()` 永久挂死）见 [design-spec/03 §3.3 协程池工程不变量](../../../design-spec/03_concurrency_design.md)。
+
+| 提交入口 | 所在文件 | 失败兜底 | grep 锚 |
+|---------|---------|---------|---------|
+| `{Submit-fn}(pool, task)` | `{path}` | Submit 失败 → 当前 goroutine 内联同步执行 `task()` | `R-IO-RAW-SUBMIT` |
+
+**纪律（结构性）**：
+- **禁止**裸 `{pool}.Submit(` / 裸 `go func()` 无界扇出；一切池任务提交走唯一封装入口。
+- 审计锚 `R-IO-RAW-SUBMIT` 与 [`docs-spec/25`](../../../docs-spec/25_io_aggregation_spec.md) 一致；grep 命中为信号级（🟡 待复核）。
+
 ---
 
 ## 5. 资源生命周期管理
@@ -114,6 +141,22 @@
 |---------|---------|---------|
 | `os.File` | `defer f.Close()` | 上游使用 `defer` 模式 |
 | `http.Response.Body` | `defer resp.Body.Close()` | 即便 err != nil 也要 close（如 body != nil） |
+
+### 5.4 异步任务 ctx 派生登记
+
+> 登记本工程哪些**异步任务**（缓存回写 / fire-and-forget / 脱离请求的后台写）用**派生 ctx** 脱离请求生命周期，与哪些子任务**透传请求 ctx**。**为什么这么分**（取消/超时传播 → ctx 透传；异步任务派生脱离，否则请求一结束异步写回被 `cancel` 杀掉、写了一半）见 [design-spec/03 §3.1](../../../design-spec/03_concurrency_design.md)；与 [`docs-spec/25 §4`](../../../docs-spec/25_io_aggregation_spec.md) 聚合器异步写回 detach 同源。本处只登记选定项。
+
+| 异步任务 / 子任务 | ctx 类别 | 取消传播 | 派生方式 |
+|------------------|---------|---------|---------|
+| `{request-subtask}` | 透传请求 ctx | 跟随请求取消 | 直接透传 `ctx` |
+| `{cache-writeback}` | 派生 ctx（脱离） | 不被请求取消波及 | `context.WithoutCancel` / 复制新 root + 自带超时 |
+
+**纪律（结构性）**：
+
+- 子任务必须**透传请求 `ctx`**（取消/超时能传播到下游）；
+- **异步任务**（缓存回写 / fire-and-forget / 脱离请求的后台写）必须用**派生 ctx** 脱离请求生命周期，否则请求结束即被 `cancel` 杀掉、写了一半。
+- 与 §5.2「`ctx.Done()` 退出」正交：一个管"怎么退出"，一个管"别被请求取消误杀"，不可互相替代。
+- 派生 ctx 仍须**自带超时**（禁无超时悬挂），并仍服从 §5.2 退出路径。
 
 ---
 
@@ -165,10 +208,18 @@
 | --- | --- |
 | 新增 `sync.Mutex` / `sync.RWMutex` / `sync.Map` | §2 新增一行 |
 | 新增 `go func()` / `errgroup.Go` | §1.1 追加节点 + §5.2 登记 cancel 路径 |
+| 新增异步任务（缓存回写 / fire-and-forget）/ 出现 `context.WithoutCancel` / 复制新 root ctx | §5.4 异步任务 ctx 派生登记新增一行（与 docs-spec/25 §4 detach 同源） |
 | 新增 `chan T` / `make(chan T, N)` | §4.1 新增一行 |
+| 新增协程池 / 调整池容量或失败语义 | §4.3 协程池容量登记新增 / 更新一行（容量值同步 io_contract §6 / performance_contract §6.1） |
+| 新增 / 修改统一提交入口（含内联兜底） | §4.4 内联兜底提交器纪律登记同步（grep 锚 `R-IO-RAW-SUBMIT`） |
 | 修改锁字段（新增 / 移除 / 重命名） | §3.1 同步；多锁路径 → §3.2 更新 |
 | 新增 `defer xxx.Close()` 资源型 | §5.1 / §5.3 登记 |
 
 ### 8.2 与 BUILD_STATUS §11 约束清单状态轨道的关系
 
 每条约束条目（§2 一行 / §3.1 一行）对应 BUILD_STATUS.md §11 的"已设计 / 已启用"计数。新增约束 → BUILD_STATUS §11 对应类目"已设计条目数"+1。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

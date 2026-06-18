@@ -115,3 +115,8 @@ Stage 1 → Stage 2 → Stage 3 → Stage 4 → Stage 5 → Stage 6（可选）
 ### 9.3 refactor
 
 ## 10. 当前阶段决策记录（如有 🚫 模块）
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

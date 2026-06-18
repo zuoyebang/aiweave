@@ -4,7 +4,7 @@
 
 > 落地工程把本表复制到 `docs/INDEX.md §0`，按工程实际启用情况标记每个规范的状态。
 >
-> AIWeave 骨架本身的所有 28 篇 docs-spec + 18 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
+> AIWeave 骨架本身的所有 28 篇 docs-spec + 6 篇 design-spec + 19 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
 
 ### 0.1 规范启用状态
 
@@ -16,9 +16,10 @@
 | `docs-spec/22_performance_contract` 性能合约 | 🟢 / 🟡 / ⬜ / 🚫 | — | 推荐启用 |
 | `docs-spec/23_observability` 可观测性（Metrics） | 🟢 / 🟡 / ⬜ / 🚫 | — | 推荐启用 |
 | `docs-spec/24_cross_service_contract` 跨服务合约 | 🟢 / 🟡 / ⬜ / 🚫 | — | 单体服务可标 🚫 |
-| `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（两条 IO 铁律） |
+| `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（三条 IO 铁律） |
 | `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
 | `docs-spec/27_deployment_runtime` 部署与运行时生命周期 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（容器化部署 / 优雅启停 / 探针） |
+| `design-spec/*` 架构设计方法论（六视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
 | Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
@@ -79,19 +80,33 @@
 | 22 | [docs-spec/22_performance_contract_spec.md](docs-spec/22_performance_contract_spec.md) | docs/architecture/performance_contract.md | **性能合约与热路径规范**：全局 SLA / 热路径标注 / 内存预算 / 数据访问约束 / 背压策略 / 性能回归测试 / 与 12 边界划分 + B1 反向同步规则 |
 | 23 | [docs-spec/23_observability_spec.md](docs-spec/23_observability_spec.md) | docs/architecture/observability.md | **可观测性规范（Metrics 限服务级）**：仅服务级基础指标 / Cardinality 控制 / Label 禁止清单 / 告警规则 / 与 13 边界划分 + B1 反向同步规则 |
 | 24 | [docs-spec/24_cross_service_contract_spec.md](docs-spec/24_cross_service_contract_spec.md) | docs/architecture/cross_service_contract.md | **跨服务合约规范**：上下游依赖图 / 上游合约 / 下游合约 / 故障传播矩阵 / 接口版本管理 + B1 反向同步规则 |
-| 25 | [docs-spec/25_io_aggregation_spec.md](docs-spec/25_io_aggregation_spec.md) | docs/architecture/io_contract.md | **IO 极致与聚合并行规范**：两条 IO 铁律（禁止 N+1 / 禁止独立串行编排）/ 聚合器模式（收集→批量读→并行回源→单飞→异步写回）/ 并行编排原语 / 数据访问聚合约束 / IO 往返预算 / IO 回归测试 + B1 反向同步规则 |
+| 25 | [docs-spec/25_io_aggregation_spec.md](docs-spec/25_io_aggregation_spec.md) | docs/architecture/io_contract.md | **IO 极致与聚合并行规范**：三条 IO 铁律（批量优先 / 禁止 N+1 / 禁止独立串行编排）/ 聚合器模式（收集→批量读→并行回源→单飞→异步写回）/ 并行编排原语 / 数据访问聚合约束 / IO 往返预算 / IO 回归测试 + B1 反向同步规则 |
 | 26 | [docs-spec/26_config_center_spec.md](docs-spec/26_config_center_spec.md) | docs/architecture/config.md §6-§9 | **配置中心与凭据加密规范**：配置上云权威源模型 / 配置中心 Client 抽象与拉取落盘编排 / 凭据对称加密（密钥应用层持有不入库）/ 启动期 fail-fast 加载时序（治理 config.md §6-§9，与 04 §2 边界划分） |
 | 27 | [docs-spec/27_deployment_runtime_spec.md](docs-spec/27_deployment_runtime_spec.md) | docs/architecture/deployment.md | **部署与运行时生命周期规范**：部署产物蓝图（镜像/编排/流水线）/ 容器镜像约束 / 健康探针分层语义（liveness/readiness/startup）/ 启动就绪时序（衔接 26）/ 优雅关闭时序（drain + 提交位点，对账 20 §1.1）/ 发布回滚策略（与 18 §11.5.4 边界）+ B1 反向同步规则。补齐"重建产物能上线"的第一性闭环 |
+
+## design-spec/ —— 架构设计方法论（技术方案生成参考）
+
+编号 00-06，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。
+
+| 序号 | 规范 | 决策落到 docs/ | 表示真相源 | 说明 |
+|------|------|---------------|-----------|------|
+| 00 | [design-spec/00_design_overview.md](design-spec/00_design_overview.md) | — | — | 设计方法论总纲：第三支柱定位 / 六视角清单 / 统一 lens 九节骨架 / 双源真相边界 / 技术方案(TRD)产物结构 / 占位符纪律继承 |
+| 01 | [design-spec/01_io_design.md](design-spec/01_io_design.md) ⭐ | architecture/io_contract.md | [docs-spec/25](docs-spec/25_io_aggregation_spec.md) | **旗舰范本（写透）**：IO 三维度（次数/串并行/往返）+ 读写路径分治 + 读/写两棵决策树 + 三句话默认（批量/并行/单次往返优先）+ 借纪律不借实现（按数据形态重选原语）+ 编排权衡矩阵 + 反模式速查（R-IO-*）+ 机械闸门。硬规则（三条铁律 / 聚合器）引用 25 不复制 |
+| 02 | [design-spec/02_data_model_design.md](design-spec/02_data_model_design.md) | schema/database_design.md | [docs-spec/05](docs-spec/05_schema_design_spec.md) | 数据建模决策（写透）：数据访问层范式（私有纯查询+公有缓存编排+成对批量）/ 分库分表决策树（业务域+量级+读写模式 / 逻辑物理表名解耦）/ shard 分组并行 / 批量三段式 / 组装层 map 入参纪律 |
+| 03 | [design-spec/03_concurrency_design.md](design-spec/03_concurrency_design.md) | architecture/concurrency_safety.md | [docs-spec/20](docs-spec/20_concurrency_safety_spec.md) | 并发模型决策（写透）：并发原语选型 / **协程池容量定量（Little 定律，远大于核数）** / 阻塞不变量 / 内联兜底提交器 |
+| 04 | [design-spec/04_transaction_design.md](design-spec/04_transaction_design.md) | service/transaction_design.md | [docs-spec/21](docs-spec/21_distributed_transaction_spec.md) | 事务一致性决策（写透）：一致性强度判定 / 本地 vs 分布式 / **弱一致+边界兜底+监控取舍** / 读写分离消除幂等复杂度 |
+| 05 | [design-spec/05_caching_design.md](design-spec/05_caching_design.md) | cache/cache_design.md | [docs-spec/06](docs-spec/06_cache_design_spec.md) | 缓存策略决策（写透）：统一访问层 / **读写非对称降级（加速层 vs 数据源）** / 多级缓存 / 值编码 / Hash 分桶 / 本地 SQLite 镜像 / 确定性加密 ID |
+| 06 | [design-spec/06_resilience_design.md](design-spec/06_resilience_design.md) | circuit_breaker/ + architecture/performance_contract.md | [docs-spec/12](docs-spec/12_circuit_breaker_spec.md) / [22](docs-spec/22_performance_contract_spec.md) | 稳定性决策（写透）：**自适应熔断（SRE 概率丢弃 > 二态）** / 零侵入接入 / 连接池基线 / 分层与数据层禁日志 / 危险开关双门禁 |
 
 ## skills-spec/ —— `.claude/skills/` 的规范
 
 | 文档 | 说明 |
 |------|------|
-| [skills-spec/00_skill_overview.md](skills-spec/00_skill_overview.md) | Skill 体系总览：4 类分组（创建 9 / 维护 2 / 审计 6 / 终极 1）、命名约定、调用顺序、与 Stage 的协同 |
+| [skills-spec/00_skill_overview.md](skills-spec/00_skill_overview.md) | Skill 体系总览：5 类分组（创建 9 / 维护 2 / 审计 6 / 终极 1 / 设计 1）、命名约定、调用顺序、与 Stage 的协同 |
 | [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) | Skill 编写指南：frontmatter / 步骤化结构 / 文档同步 / 测试同步 / 验证 |
 | [skills-spec/02_settings_local_json_spec.md](skills-spec/02_settings_local_json_spec.md) | settings.local.json 规范：permissions / hooks / 推荐配置 |
 
-`templates/skills/{name}/SKILL.md` 是 **18 个** Skill 的可执行骨架（每个 SKILL.md 同时充当规范与可复制的执行手册；公共章节真相源在 [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) §A-§E）：
+`templates/skills/{name}/SKILL.md` 是 **19 个** Skill 的可执行骨架（每个 SKILL.md 同时充当规范与可复制的执行手册；公共章节真相源在 [skills-spec/01_skill_authoring_guide.md](skills-spec/01_skill_authoring_guide.md) §A-§E）：
 
 | Skill | 骨架文件 |
 |-------|----------|
@@ -113,6 +128,7 @@
 | new-saga-step | [templates/skills/new-saga-step/SKILL.md](templates/skills/new-saga-step/SKILL.md) — 生成 Saga 步骤代码 + 补偿 + 幂等 Key |
 | domain-invariant-check | [templates/skills/domain-invariant-check/SKILL.md](templates/skills/domain-invariant-check/SKILL.md) — 审计代码 ↔ 领域不变量约束一致性 |
 | failure-path-review | [templates/skills/failure-path-review/SKILL.md](templates/skills/failure-path-review/SKILL.md) — 审计失败路径文档 / 测试覆盖完整性 |
+| design-solution | [templates/skills/design-solution/SKILL.md](templates/skills/design-solution/SKILL.md) — **设计类（A0 上游）**：输入需求 → 过 design-spec 六视角 → 产出技术方案(TRD)，衔接 A1 forward / B1 sync |
 
 ## templates/ —— 可直接复制的骨架
 
@@ -120,7 +136,7 @@
 |------|------|
 | [templates/CLAUDE.md](templates/CLAUDE.md) | 项目根 CLAUDE.md 骨架，复制到新项目根目录后填空即可 |
 | [templates/docs/](templates/docs/) | 完整 docs/ 骨架（每篇 md 含目录结构 + 待填字段） |
-| [templates/skills/](templates/skills/) | 18 个 .claude/skills/{name}/SKILL.md 骨架（4 类分组：创建 9 / 维护 2 / 审计 6 / 终极 1） |
+| [templates/skills/](templates/skills/) | 19 个 .claude/skills/{name}/SKILL.md 骨架（5 类分组：创建 9 / 维护 2 / 审计 6 / 终极 1 / 设计 1） |
 
 ---
 
@@ -130,7 +146,15 @@
 
 | 日期 | 变更 | 触发事件 |
 |------|------|---------|
+| 2026-06-18 | v1.5 全链路审计补缺（design-spec → docs-spec + templates 闭环加固） | 6 个独立子代理逐 lens 审计"design-spec 核心理念是否真体现在 docs-spec + templates"，修补审计抓出的**真缺口**（决策在 design-spec、下游零表示）：<br>**内容缺口**：① 数据层禁日志 → docs-spec/13 §14 + logging.md §6.6；② 危险开关双门禁（`RUN_ENV` 运行档位）→ docs-spec/26 §7.5 + config.md §10 + 锚 `R-CONF-DANGER-SINGLE-GATE`；③ ctx 派生/detach 脱离请求生命周期 → docs-spec/20 §7.4 + concurrency_safety §5.4；④ 降级差异化三类法（只读返空 / 关键拒绝 / best-effort 静默）→ docs-spec/12 §5.1 + circuit_breaker_design §5.1；⑤ 直方图桶按 SLO + label status/mode → docs-spec/23 §7.3 + observability §3.3；⑥ 分层"禁反向 import" → CLAUDE 分层节<br>**锚索引自洽**：`R-CACHE-*`（4）+ `R-CONF-DANGER-SINGLE-GATE` + `R-IO-RAW-SUBMIT` 补进 ai_dev_guide §10 grep 锚索引 + BUILD_STATUS §11.4（此前只在 CLAUDE，机械审计 Skill 抓不到）<br>**纪律**：全程只补"表示槽位 + 反向引用 design-spec"、不复制方法论；§12 占位符自检（修了 docs-spec/12 §5.1 一处业务名泄漏）<br>**结论**：核心决策资产本就已三层贯通；本轮补的是 6 处真缺口 + 入口/索引自洽 |
+| 2026-06-18 | v1.5 深化：高性能极致点 + 全链路落地 | 在 design-spec 六视角基础上补一批"极致"决策点，并**全链路落到 docs-spec + templates + 入口文档**（闭合"设计→文档→代码"环）：<br>**design-spec 深化**：05 缓存（XFetch 概率提前重算 → 回源保护三类分治 / 紧凑编码阈值 / 概率·位图结构 HLL·Bitmap·Roaring / **本地缓存准入条件 + 排除清单** / **§3.6 分片可扩展：大 key·热 key 治理 + 多分片利用 + 容量线性律**）；02 数据建模（覆盖索引 + 索引下推 ICP + 前缀索引 + 不过度索引 / 批量 Upsert + LOAD DATA 数据访问）；01 IO（批量 Upsert `ON DUPLICATE KEY`·`ON CONFLICT` + `LOAD DATA`/`COPY` 写路径）<br>**全链路表示层落地**：cache_design.md（§2.10/§2.11/§2.12/§3.5/§9）+ database_design.md（§3.0.3/§7.1/§7.2）+ io_contract.md（§5.7）各补表示记录槽位，docs-spec 06/05/25 同步结构说明；**入口文档**：CLAUDE.md 新增规则 20 缓存设计纪律 + 危险模式 `R-CACHE-*`（规则 19→20）、ai_dev_guide §8.14 缓存约束；docs-spec/03 同步规则计数<br>**纪律**：决策方法论留 design-spec、表示层只反向引用不复制；全程守 §12 占位符双轨（具体命令/SQL/阈值入参考示例段）<br>**体系**：docs-spec 维持 28；design-spec 维持 7（内容深化）；Skill 维持 19 |
+| 2026-06-17 | v1.5 演进：架构设计方法论（第三支柱 design-spec，六视角全部写透） | 把 AIWeave 从"决策已定之后的表示/执行规范"扩展为"也参与技术方案生成"，并融入一份生产级《高性能后端 IO/KV/数据库架构设计方案》的全部内容：<br>**新增支柱**：`design-spec/` 与 docs-spec / skills-spec 正交，回答"面对需求怎么做出架构决策"。统一 lens 九节骨架（设计目标 / 输入信号 / 决策树 / 默认选型与升级路径 / 权衡矩阵 / 反模式速查 / 产出落地 / 边界划分 / 参考示例）<br>**新增 7 篇（全部写透）**：00 总纲（含**四大元方法**：IO 第一性 / 读写路径分治 / 借纪律不借实现↔§12 / 机械闸门下沉↔§14）+ 01 IO（⭐旗舰：三维度+读写两棵决策树+三句话默认+借纪律不借实现+机械闸门）+ 02 数据建模（数据访问层范式 / 分库分表 / shard 并行 / 组装层 map 入参）+ 03 并发（**Little 定律定容** / 阻塞不变量 / 内联兜底）+ 04 事务（弱一致+边界兜底 / 读写分离消幂等）+ 05 缓存（**读写非对称降级** / 多级缓存 / 值编码 / Hash 分桶 / 本地 SQLite / 加密 ID）+ 06 稳定性（**SRE 概率丢弃熔断** / 连接池基线 / 数据层禁日志 / 危险开关双门禁）<br>**借纪律不借实现（强制纪律）**：方案中的系统名 / 数值 / 代码（MGET vs Pipeline、2048/384、64、16M 桶、KYC 80%、确定性加密等）全部沉入各篇末尾"参考示例"段（带 ⚠️），主体只保留占位符化的决策纪律——践行 §12 双轨结构<br>**双源真相规避**：每篇 §8 边界表——design-spec 管"怎么选"，硬规则正文（三条 IO 铁律、字段精度、锁策略、熔断算法）真相源仍在对应 docs-spec，引用不复制<br>**上提全局纪律**：把"铁律零·批量优先"补进 docs-spec/25 §2.0（25 由两条铁律升为**三条铁律**：批量优先 / 禁 N+1 / 禁独立串行编排）；把"读路径/写路径分治"升为 PRINCIPLES §13.3 黄金纪律，§13 标题改为"三条铁律 / 读写分治 / 聚合优先"；同步刷新 INDEX / README / templates(CLAUDE·io_contract·ai_dev_guide) / io-review 的计数表述<br>**产物**：六视角走完产出技术方案(TRD)，再进既有 A1 forward / B1 sync 流<br>**新增设计类 Skill**：`/design-solution`（输入需求→过六视角→产出 TRD）——Skill 体系新增**第 5 类「设计类（A0 设计阶段）」**，是 design-spec 支柱的执行器、位于 docs↔代码生命周期最上游<br>**表示层补齐（闭合"设计→文档→代码"环）**：为方案技术点在 templates/docs + docs-spec 补**表示记录槽位**（工程填空"选了什么"，方法论仍在 design-spec、只反向引用不复制）——cache_design（非对称降级 / TTL 抖动 / 值编码 / Hash 分桶 / 本地镜像 / 写路径削峰）、database_design（数据访问层四件套 / 逻辑物理表名解耦 + shard 并行 / 对外 ID / 分库读写分级）、service_design（Assembler map 入参）、concurrency_safety（协程池容量登记 / 内联兜底）、transaction_design（读写分离 / 边界兜底 / delta 不变量）、io_contract（读写路径分治 / shard 并行 / 命中不合并）、infrastructure（连接池基线 / 嵌入式库资源）；docs-spec 04/05/06/09/20/21/22/25 同步加结构说明，补全 design-spec §7「产出与落地」指向的悬空槽位<br>**体系升级**：新增 design-spec 7 篇（00-06）；docs-spec 维持 28 篇（章节内补表示槽位）；Skill 18 → 19（4 类 → 5 类） |
 | 2026-06-08 | v1.4 演进：部署与运行时生命周期 | 补齐第一性目标最后一块短板——"仅凭 docs 重建工程"必须包含"重建产物能部署、能优雅启停"：<br>**新增规范**：docs-spec/27 部署与运行时生命周期（部署产物蓝图 / 容器镜像约束 / 健康探针分层语义 liveness·readiness·startup / 启动就绪时序衔接 26 / 优雅关闭时序 drain+提交位点对账 20 §1.1 / 发布回滚策略与 18 §11.5.4 边界 / 资源配额弹性）<br>**新增模板**：templates/docs/architecture/deployment.md<br>**审计折叠**：参照 26 的 R-CONF-* 模式，部署锚 R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-* 折叠进 doc-sync-check（不新增 Skill，Skill 数维持 18）；doc-sync-check 维度 8→9<br>**机制完善**：ai_dev_guide §8.13 约束总清单 + §10.9 grep 锚索引；CLAUDE.md 规则 19 部署/运行时 + 危险模式 7 锚 + 范围判定表 4 行；OPERATIONS B1 清单 21→22 项 + 6 层防御映射 +1 行；03 §3.2 / 00 §5 边界修正（部署设计契约入 docs，操作手册入 runbook）<br>**边界划分**：27 ↔ 26 / 20 / 18 / 23 / 24<br>**体系升级**：docs-spec 27→28 篇（00-27）；Skill 维持 18 个 |
 | 2026-06-05 | v1.3 演进：IO 极致 + Hooks 机制 + 配置上云 | 落地"IO 极致"诉求与 AI 工程化标准强化：<br>**新增规范**：docs-spec/25 IO 极致与聚合并行（两条 IO 铁律：禁止 N+1 / 禁止独立串行编排；聚合器模式：收集→批量读→并行回源→单飞→异步写回；并行编排原语；IO 往返预算；IO 回归测试）/ docs-spec/26 配置中心与凭据加密（配置上云权威源模型 / Client 抽象拉取落盘编排 / 对称加密密钥应用层持有不入库 / 启动 fail-fast 时序）<br>**新增 Skill**：io-review（审计 代码 ↔ IO 铁律，审计类 5→6）<br>**新增模板**：templates/docs/architecture/io_contract.md；config.md 扩展 §6-§9<br>**Hooks 升级为强制规范**：skills-spec/02 §4 两类强制 Hook 族（IO 铁律检查 + 代码↔文档双向同步）放团队共享 settings.json；新增 L0 自动化防御层<br>**机制完善**：PRINCIPLES §13 IO 铁律 + §14 Hooks 机制；CLAUDE.md 规则 17 IO 聚合 + 规则 18 配置凭据 + 危险模式 R-IO-* / R-CONF-* + 范围判定表 3 行 + Hooks 子节；OPERATIONS 5 层防御→6 层（+L0）+ B1 清单 18→21 项；04 §2 ↔ 26 边界划分<br>**体系升级**：docs-spec 25→27 篇（00-26）；Skill 17→18 个 |
 | 2026-05-15 | 初版发布（v1.0） | 从真实工程实践抽象沉淀；19 篇 docs-spec + 12 个 Skill |
 | 2026-05-25 | v1.2 演进完整落地 | 按 `tc-md/aiweave-evolution-proposal.md` v1.2 推进，完整覆盖 15 项后端复杂系统痛点：<br>**新增规范**：docs-spec/20 并发安全 / 21 分布式事务 / 22 性能合约 / 23 可观测性 / 24 跨服务合约<br>**新增 Skill**：concurrency-review / performance-review / new-saga-step / domain-invariant-check / failure-path-review<br>**结构增强**：09 §7 领域不变量 + §4.N.8 事务一致性 + §10.5 伪码标记统一语法；02 §11 约束清单状态轨道 + §12 运行时基线区域；05 §8 字段演进；17 §4.7-§4.9 故障注入/并发/性能测试 framework + §5.5 高级用例；18 §11 安全重构方法论 + §11.5.4 灰度切流量；19 范围判定表扩展<br>**机制完善**：CLAUDE.md 16 条规则 + 危险模式清单（含 grep 锚）；ai_dev_guide.md 约束总清单 + 约束突破登记表 + grep 锚 rule-id 索引；OPERATIONS 第三部分 18 项 + 附录"5 层防御 × W 工作流对照表"；INDEX.md §0 采纳进度<br>**边界划分**：12 ↔ 22 / 13 ↔ 23<br>**体系升级**：Skill 体系 12 → 17，3 类分组 → 4 类分组（创建 / 维护 / 审计 / 终极） |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

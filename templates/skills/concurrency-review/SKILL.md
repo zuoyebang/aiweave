@@ -142,3 +142,8 @@ grep 模式：'for [^{]*\{[\s\S]{0,300}?defer '
 - 与 `doc-sync-check`：审计维度互补（前者代码 ↔ 文档；本 Skill 代码 ↔ 约束）
 - 与 `performance-review`：并列的审计类 Skill；并发问题往往是性能问题的根因
 - 与 `new-service` / `new-controller`：建议在 `/new-*` 生成代码后自动触发 `/concurrency-review`，作为审计兜底
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

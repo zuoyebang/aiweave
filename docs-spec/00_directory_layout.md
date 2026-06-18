@@ -56,7 +56,7 @@
 │
 └── .claude/
     ├── settings.local.json  # 项目级设置
-    └── skills/              # 18 个 Skill（详见 skills-spec/）
+    └── skills/              # 19 个 Skill（详见 skills-spec/）
         ├── new-model/SKILL.md
         ├── new-service/SKILL.md
         └── ...
@@ -183,3 +183,8 @@ test -f CLAUDE.md
 ```
 
 不过则补齐缺失项再开工。
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

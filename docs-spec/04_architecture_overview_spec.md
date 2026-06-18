@@ -100,8 +100,12 @@ infrastructure.md 必须按以下章节顺序组织：
 - `## 3.` 各资源初始化函数（Init* 函数位置与职责）
 - `## 4.` 全局客户端（导出的全局变量 → 业务代码如何引用）
 - `## 5.` 与外部服务对比（如适用，本工程的极简主义裁剪）
+- `## 6.` 连接池配置基线登记（每资源一行登记 `{maxIdle}` / `{maxOpen}` / `{conn-timeout-ms}` / `{read-timeout-ms}` / `{write-timeout-ms}` / `{conn-max-lifetime}` / 重试；约束提示"写超时 ≥ 读超时、外部短超时 + 重试"。基线方法论真相源在 [`design-spec/06 §9.2`](../design-spec/06_resilience_design.md)，本节只登记"选了什么"不复制）
+- `## 7.` 嵌入式库资源登记（如启用本地镜像：读池 `{read-maxOpen}` 按 `min(max(2×NumCPU,16),64)` 长存保温 / 写池 `MaxOpenConns=1` 串行。方法论真相源在 [`design-spec/03 §9.4`](../design-spec/03_concurrency_design.md)，本节只登记不复制）
 
 > **完整章节骨架见** [`templates/docs/architecture/infrastructure.md`](../templates/docs/architecture/infrastructure.md)。
+>
+> §6 / §7 是**表示记录槽位**（工程填空"选了什么"），非方法论；连接池基线 / 嵌入式库读写双池的取舍方法只在 design-spec/06 §9.2 与 design-spec/03 §9.4，本规范引用不复制（双源真相规避）。
 
 ### 3.2 关键纪律
 
@@ -252,3 +256,8 @@ routing.md 必须按以下章节顺序组织：
 - ASCII 图为优（mermaid 也可，但要确保可被纯文本工具读取）
 - 引用其他 md 时使用 `[显示文本](相对路径)` 格式
 - 表格使用标准 markdown
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

@@ -306,3 +306,8 @@ base.RenderJsonSucc(ctx, result)
 | 修改文案 | §2.3 / §3.3 + 同步代码 + i18n（如有） |
 | 新增业务对象状态 | §4 新增子节 + database_design.md / cache_design.md 同步 |
 | 调整错误码范围划分 | §3.2 + 影响评估 |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

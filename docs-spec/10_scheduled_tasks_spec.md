@@ -451,3 +451,8 @@ func startCrontab(engine *gin.Engine) {
 | `{cleanup-method}` | CleanExpiredQuota |
 | `{module-N}` | BillingService |
 | `{核心统计字段集}` | total_count / counted_count / success_count / total_amount |
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

@@ -85,3 +85,8 @@ Model 层无独立业务逻辑，**不强制**单元测试。需校验 `test/fix
 go build ./models/{db_package}/...
 go vet ./models/{db_package}/...
 ```
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

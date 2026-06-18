@@ -350,3 +350,8 @@ const (
 | `{date-day}` / `{date-second}` | `20260407` / `20260407103015` |
 | `{seq}` / `{rand-hex}` | `001` / `A1B2C` |
 
+
+
+---
+
+> 📝 **作者** XuRuibo <hustxurb@163.com> · `SPDX-FileCopyrightText: 2026 XuRuibo` · `SPDX-License-Identifier: Apache-2.0`

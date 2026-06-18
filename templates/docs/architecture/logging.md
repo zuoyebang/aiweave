@@ -56,6 +56,18 @@ tlog.InfoLogger(ctx, "task completed",
 ### 6.4 Service 层
 ### 6.5 Redis / MySQL 故障
 
+### 6.6 分层日志纪律（数据层禁日志）
+
+> 决策/理由见 [design-spec/06_resilience_design.md §3.3 / §9.3](../../../design-spec/06_resilience_design.md)。与「热路径不打日志」（性能理由）并列且不同：本条是分层归属理由。本节只登记本工程"哪些层不打、谁定级"，不复制方法论。
+
+| 层 | 是否打日志 | 约定 |
+|----|-----------|------|
+| `controller`（请求边界） | ✅ 唯一记日志层 | 收到下层 `return error` 后按"自愈 → WARN / 需人工 → ERROR"定级记一次 |
+| `service` | ✗ 禁打日志 | 只 `return error` 上传 |
+| `data` | ✗ 禁打日志 | 只 `return error` 上传 |
+
+要点：`service` / `data` 一律 `return error` 上传，由 `controller` 统一定级（`ErrRecordNotFound` 在 `data` 层不记，在 `controller` 层才判定是否正常业务）。
+
 ## 7. 敏感数据脱敏
 
 禁止打印：secret / password / token / verifyCode / 完整身份证号 / 银行卡号 / 手机号。
@@ -71,3 +83,8 @@ tlog.InfoLogger(ctx, "task completed",
 | log/{project}.log | INFO+ | 按日 |
 | log/{project}.log.wf | WARN/ERROR | 按日 |
 | log/{project}.log.access | accessLog | 按日 |
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

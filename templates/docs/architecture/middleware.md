@@ -47,3 +47,8 @@ N. ctx.Set("{key}", {value})
 ## 3. {middleware_3}
 
 （同 §1 结构）
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

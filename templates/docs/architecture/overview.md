@@ -49,3 +49,8 @@
 ## 5. AI 原生工程
 
 详见 [`docs/architecture/ai_dev_guide.md`](ai_dev_guide.md)。
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充

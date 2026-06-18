@@ -123,3 +123,8 @@ go build ./controllers/command/... ./service/{module}/... ./router/...
 go vet ./...
 cd test && go test -v ./e2e/... -run Scenario{Task}
 ```
+
+
+---
+
+> 🧩 **AIWeave 骨架 · 作者 XuRuibo** <hustxurb@163.com> · Apache-2.0 · 模板文件，复制到工程后按业务语义填充
