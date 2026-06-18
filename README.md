@@ -1,7 +1,7 @@
 # AIWeave — Go 后端工程「AI 原生 + AI 可重建 + 架构设计」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.5-green.svg)](INDEX.md#变更日志)
+[![Version](https://img.shields.io/badge/version-v1.5-green.svg)](INDEX.md)
 [![docs-spec](https://img.shields.io/badge/docs--spec-28-informational.svg)](docs-spec/)
 [![design-spec](https://img.shields.io/badge/design--spec-7-informational.svg)](design-spec/)
 [![skills](https://img.shields.io/badge/skills-19-informational.svg)](templates/skills/)
@@ -360,7 +360,7 @@ AIWeave 自身不耦合任何具体业务领域；规则中出现的 `{module-N}
 - 太宽松（产生不一致） → 收紧或加自动化检查
 - 未覆盖（出现新场景） → 增补章节
 
-在 `aiweave/INDEX.md` 顶部维护变更日志，每条变更注明日期 + 触发的实践事件。
+规范的演进记录在 git 提交历史 / Release 中，每次重要变更在提交信息注明触发的实践事件。
 
 ---
 
