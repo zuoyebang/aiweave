@@ -79,10 +79,10 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
    - **英文实体 ID**：`userId` / `orderId` / `accountId` / `rechargeId` / `logId`
    - **英文 struct / Service**：`RegisterReq` / `LoginReq` / `VerifyReq` / `VerifyResp` / `ReportReq` / `AccountService` / `BillingService` / `UserService` / `OrderService`
    - **英文字段 / 概念**：`verify_code` / `balance` / `password_hash` / `access_token` / `refresh_token` / `app_secret`
-   - **英文业务模块名**（v1.3 补充，与 PRINCIPLES §12.3 反例对照表对齐）：
+   - **英文业务模块名**（与 PRINCIPLES §12.3 反例对照表对齐）：
      - 典型业务模块：`account` / `order` / `billing` / `product` / `merchant` / `payment` / `recharge` / `customer` / `cart` / `checkout`
      - 作 `package` 声明 / 路径 `service/` / `notice.module` 标签值 / Redis 命名空间前缀等出现皆视为泄漏
-   - **英文业务字段 / 业务量化**（v1.3 补充，含计数 / 计费 / 额度类业务专属字段）：
+   - **英文业务字段 / 业务量化**（含计数 / 计费 / 额度类业务专属字段）：
      - 业务标识字段：`app_key` / `api_code` / `account_id` / `order_id` / `product_id` / `merchant_id`
      - 业务量化字段：`total_amount` / `used_amount` / `remaining` / `quota`
      - 业务计数字段：`total_count` / `success_count` / `fail_count` / `counted_count`

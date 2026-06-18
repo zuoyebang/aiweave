@@ -1,14 +1,13 @@
 # AIWeave — Go 后端工程「AI 原生 + AI 可重建 + 架构设计」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.5-green.svg)](INDEX.md)
 [![docs-spec](https://img.shields.io/badge/docs--spec-28-informational.svg)](docs-spec/)
 [![design-spec](https://img.shields.io/badge/design--spec-7-informational.svg)](design-spec/)
 [![skills](https://img.shields.io/badge/skills-19-informational.svg)](templates/skills/)
 [![Author](https://img.shields.io/badge/author-XuRuibo-orange.svg)](#10-作者与联系方式)
 
 > **作者**：XuRuibo &lt;hustxurb@163.com&gt;
-> 版本：v1.5 | 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
+> 适用：基于 Gin / GORM / cobra / sarama 的 Go 后端微服务
 > 目标读者：项目架构师、AI Agent（Claude Code 等）
 
 **AIWeave**（AI 编织）—— 名字呼应规范的两面：
@@ -20,7 +19,7 @@
 
 AIWeave 把这一断言落地为：**架构设计方法论 + 目录结构规范 + 文档内容规范 + Skill 步骤化规范 + 工作流 + 自检清单 + 可复制骨架**，让任何符合规范的 Go 后端工程都能享受"AI 原生 + AI 可重建"的红利。
 
-> **三支柱（v1.5 起）**——AIWeave 不只"事后织文档"，也**参与架构决策**：
+> **三支柱**——AIWeave 不只"事后织文档"，也**参与架构决策**：
 >
 > - **`design-spec/`** 架构设计方法论 —— 面对需求**怎么做出**架构决策（技术方案 / TRD 生成参考）
 > - **`docs-spec/`** 文档表示规范 —— 决策**怎么写下来**（精准到可重建代码）
@@ -123,7 +122,7 @@ AIWeave 把这一断言落地为：**架构设计方法论 + 目录结构规范 
 
 ---
 
-## 2.5 第三支柱：design-spec 架构设计方法论（v1.5）
+## 2.5 第三支柱：design-spec 架构设计方法论
 
 `design-spec/` 回答 docs-spec 不回答的问题——**面对需求，怎么"做出"架构决策**，而不是决策定了之后怎么写下来。它是"技术方案(TRD)生成"的参考，按 **六大决策视角（lens）** 组织，并内置一套从生产实践沉淀的**高性能基线**：
 

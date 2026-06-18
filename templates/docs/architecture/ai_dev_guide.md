@@ -177,7 +177,7 @@
 | 资源消耗基线 | [`runtime_profile.md §3`](runtime_profile.md) | ⬜ / 🟢 视工程启用 |
 | 关键超时链 | [`runtime_profile.md §4`](runtime_profile.md) | ⬜ / 🟢 视工程启用 |
 
-### 8.11 IO 铁律与聚合约束（v1.3）
+### 8.11 IO 铁律与聚合约束
 
 | 约束类 | 文档锚点 | 状态 |
 |--------|---------|------|
@@ -189,7 +189,7 @@
 | 读路径覆盖索引 + ICP + 不过度索引 | [`database_design.md §7.1`](../schema/database_design.md) / [`§7.2`](../schema/database_design.md) | 🟢 |
 | IO 往返预算 + IO 回归测试（计数断言无 N+1） | [`io_contract.md §1`](io_contract.md) + [`§7`](io_contract.md) | 🟢 |
 
-### 8.12 配置中心与凭据加密约束（v1.3 / 如启用配置上云）
+### 8.12 配置中心与凭据加密约束（如启用配置上云）
 
 | 约束类 | 文档锚点 | 状态 |
 |--------|---------|------|
@@ -198,7 +198,7 @@
 | 凭据对称加密（密钥应用层持有 / 不入库 / 轮换） | [`config.md §8`](config.md) | ⬜ / 🟢 视工程启用 |
 | 启动期 fail-fast 加载时序 | [`config.md §9`](config.md) | ⬜ / 🟢 视工程启用 |
 
-### 8.13 部署与运行时生命周期约束（v1.4 / 如启用本规范）
+### 8.13 部署与运行时生命周期约束（如启用本规范）
 
 | 约束类 | 文档锚点 | 状态 |
 |--------|---------|------|
@@ -222,7 +222,7 @@
 
 ---
 
-## 9. 约束突破登记表（v1.2 新增）
+## 9. 约束突破登记表
 
 > 部分约束（如 metrics cardinality 默认上限、Metric 总数）是**默认上限**而非硬限制。如确有业务理由必须突破，必须在本表登记。
 
@@ -239,7 +239,7 @@
 
 ---
 
-## 10. grep 锚 rule-id 索引（v1.2 新增）
+## 10. grep 锚 rule-id 索引
 
 > 危险模式清单的机械审计入口。每条 rule-id 对应一条 grep / AST 规则，由 `concurrency-review` / `performance-review`等审计 Skill 触发。
 >
@@ -305,7 +305,7 @@
 | `R-FAIL-PATH-NO-TEST` | 失败分支 (F-N) 无对应测试用例 | 由 `failure-path-review` 扫描 test/cases/ | 🟢 |
 | `R-FAIL-PATH-WEAK-ASSERT` | 测试用例仅断言 `err != nil` 未断言 errNo / 副作用 | 由 `failure-path-review` 扫描断言模式 | 🟢 |
 
-### 10.7 IO 铁律类（v1.3 新增 / 由 `io-review` 触发）
+### 10.7 IO 铁律类（由 `io-review` 触发）
 
 | Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
 |---------|------|---------------|---------|------|
@@ -317,7 +317,7 @@
 | `R-IO-SHARED-MUTATE` | 就地修改 single-flight / Slot 共享指针字段 | `\.Value\(\)` 后对返回指针字段赋值 | 已深拷贝 | 🟢 |
 | `R-IO-RAW-SUBMIT` | 裸提交协程池（绕过内联兜底统一入口，可致 WaitGroup 挂死） | `\.Submit\(` 未走统一兜底提交器 | 已走"失败内联兜底"统一入口（concurrency_safety.md §4.4） | 🟢 |
 
-### 10.8 配置安全类（v1.3 新增 / 由 `doc-sync-check` 触发）
+### 10.8 配置安全类（由 `doc-sync-check` 触发）
 
 | Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
 |---------|------|---------------|---------|------|
@@ -327,7 +327,7 @@
 | `R-CONF-NO-FAILFAST` | 配置中心拉取失败未 fail-fast | 拉取调用后 `if err != nil` 分支无 `panic` / `os.Exit` / `Fatal` / `return err`（启动期） | 非启动期 / 有降级设计且已登记 | 🟢 |
 | `R-CONF-DANGER-SINGLE-GATE` | 高风险开关只靠配置档位、缺运行档位（`RUN_ENV`）硬门禁 | 危险开关判定无 `RUN_ENV` / 运行环境校验叠加 | 配置档位 + `RUN_ENV` 双门禁（config.md §10） | 🟢 |
 
-### 10.9 部署与运行时生命周期类（v1.4 新增 / 由 `doc-sync-check` 触发）
+### 10.9 部署与运行时生命周期类（由 `doc-sync-check` 触发）
 
 | Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
 |---------|------|---------------|---------|------|

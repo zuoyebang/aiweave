@@ -365,7 +365,7 @@ BUILD_STATUS.md 必须按以下章节顺序组织：
 
 ## 13. 与 INDEX.md §0 采纳进度的关系
 
-`INDEX.md §0 AIWeave 采纳进度`（v1.2 新增）追踪**整个工程对 AIWeave 演进规范的启用状态**（如 `20_concurrency_safety` / `21_distributed_txn` 是否启用）。
+`INDEX.md §0 AIWeave 采纳进度`追踪**整个工程对 AIWeave 演进规范的启用状态**（如 `20_concurrency_safety` / `21_distributed_txn` 是否启用）。
 
 `BUILD_STATUS.md §11 约束清单状态轨道`追踪**单条约束条目的状态**（如 §2 共享状态注册表内"某条 mutex"是否启用对应校验）。
 

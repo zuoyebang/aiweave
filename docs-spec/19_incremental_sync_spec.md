@@ -190,7 +190,7 @@ AI 完成增量同步后，必须产出：
 3.15 测试用例 → 校验 test/cases/{audience}/ 是否同步
 ```
 
-**v1.2 新增：约束类代码迹象 → 约束类文档**
+**约束类代码迹象 → 约束类文档**
 
 ```
 3.16 sync.Mutex / sync.RWMutex / sync.Map / atomic.* 新增
@@ -275,7 +275,6 @@ AI 完成增量同步后，必须产出：
 5.7 新增的 helpers 函数是否在 helpers_api.md §1 / §2 登记？
 5.8 新增 / 修改的代码是否同步了测试用例？
 
-【v1.2 新增】
 5.9  新增共享状态（sync.* / chan）是否在 concurrency_safety.md §2 / §4 双向登记？
      是否同步 BUILD_STATUS §11 约束清单状态轨道？
 5.10 新增事务边界（BeginTx / Saga 步骤）是否在 transaction_design.md §2 + 
@@ -285,7 +284,7 @@ AI 完成增量同步后，必须产出：
 5.12 新增 / 修改的事务相关方法伪码是否使用统一标记语法
      （[TXN-*] / [SAGA-STEP-N] / [IDEMPOTENT-CHECK] / [INVARIANT-CHECK] / [LOCK-*]）？
 
-【v1.2 新增（约束类扩展）】
+【约束类扩展】
 5.13 新增 Metric 是否在 observability.md §2 登记？label 是否命中 §3.2 禁止清单？
      Cardinality 是否超 §3.1 默认上限？超出是否在 ai_dev_guide.md §9 登记理由？
 5.14 新增热路径方法是否在 performance_contract.md §2 清单登记？

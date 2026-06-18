@@ -9,7 +9,7 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / loop-only（�
 
 > 公共步骤模板见 [skills-spec/01_skill_authoring_guide.md](path) §A-§E。本 Skill 不生成代码，故第 5 步测试同步不适用。
 >
-> **本 Skill 是审计类 Skill（v1.3 新增，审计类第 6 个）**。"代码 ↔ IO 铁律"一致性审计。
+> **本 Skill 是审计类 Skill（审计类第 6 个）**。"代码 ↔ IO 铁律"一致性审计。
 
 ## 第 0 步：🚫 模块 + 启用状态检查
 

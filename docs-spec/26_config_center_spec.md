@@ -2,7 +2,7 @@
 
 > 规定 `docs/architecture/config.md` 中"**配置上云 + 配置中心集成 + 凭据加密 + 启动期拉取落盘**"部分的内容结构与维护规则。
 >
-> 本规范是 AIWeave v1.3 演进新增的 P2 规范。[`04 §2`](04_architecture_overview_spec.md) 治理 `config.md` 的总体结构（分类 / 清单 / Go struct 映射），**本规范是其"配置上云 / 凭据安全"维度的真相源**——两者通过 §2 边界划分协作，不重复。
+> 本规范是 AIWeave 的 P2 规范。[`04 §2`](04_architecture_overview_spec.md) 治理 `config.md` 的总体结构（分类 / 清单 / Go struct 映射），**本规范是其"配置上云 / 凭据安全"维度的真相源**——两者通过 §2 边界划分协作，不重复。
 
 ---
 

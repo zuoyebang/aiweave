@@ -74,7 +74,7 @@
 | 16 | [docs-spec/16_constants_spec.md](docs-spec/16_constants_spec.md) | docs/architecture/constants.md | 业务常量 / 魔法数字唯一真相源 |
 | 17 | [docs-spec/17_testing_design_spec.md](docs-spec/17_testing_design_spec.md) | docs/testing/testing_design.md | 测试框架 + 测试纪律 + 4 类用例 + 与 Stage 协同 |
 | 18 | [docs-spec/18_mvp_rebuild_path_spec.md](docs-spec/18_mvp_rebuild_path_spec.md) | docs/architecture/mvp_rebuild_path.md | 分阶段构建路径（通用方法论）：覆盖 forward / rebuild / refactor 三种场景 |
-| 19 | [docs-spec/19_incremental_sync_spec.md](docs-spec/19_incremental_sync_spec.md) | （流程文档，不直接对应一篇工程 md，但塑造工程演进的 SOP） | **增量需求同步规范**：开发完需求后如何把代码改动反向同步到全链路 docs/，B1 场景的核心规则。v1.2 范围判定表扩展 5 行约束类映射 |
+| 19 | [docs-spec/19_incremental_sync_spec.md](docs-spec/19_incremental_sync_spec.md) | （流程文档，不直接对应一篇工程 md，但塑造工程演进的 SOP） | **增量需求同步规范**：开发完需求后如何把代码改动反向同步到全链路 docs/，B1 场景的核心规则。 |
 | 20 | [docs-spec/20_concurrency_safety_spec.md](docs-spec/20_concurrency_safety_spec.md) | docs/architecture/concurrency_safety.md | **并发安全与运行时约束规范**：共享状态注册表 / 锁策略 / Channel / 资源生命周期 / 危险操作清单 / 并发测试策略 + B1 反向同步规则 |
 | 21 | [docs-spec/21_distributed_transaction_spec.md](docs-spec/21_distributed_transaction_spec.md) | docs/service/transaction_design.md | **分布式事务与补偿设计规范**：事务模型选型 / 事务边界清单 / 补偿逻辑 / 幂等性 / 一致性窗口 / 失败路径全景图 / 伪码标记语法 + B1 反向同步规则 |
 | 22 | [docs-spec/22_performance_contract_spec.md](docs-spec/22_performance_contract_spec.md) | docs/architecture/performance_contract.md | **性能合约与热路径规范**：全局 SLA / 热路径标注 / 内存预算 / 数据访问约束 / 背压策略 / 性能回归测试 / 与 12 边界划分 + B1 反向同步规则 |

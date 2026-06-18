@@ -2,7 +2,7 @@
 
 > 规定 `docs/architecture/observability.md` 的内容结构与维护规则。
 >
-> 本规范是 AIWeave v1.2 演进新增的 P1 规范之一，对应痛点 #12 运维可观测性。
+> 本规范是 AIWeave 的 P1 规范之一，对应痛点 #12 运维可观测性。
 
 ---
 

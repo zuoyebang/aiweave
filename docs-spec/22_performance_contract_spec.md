@@ -2,7 +2,7 @@
 
 > 规定 `docs/architecture/performance_contract.md` 的内容结构与维护规则。
 >
-> 本规范是 AIWeave v1.2 演进新增的 P1 规范之一，对应痛点 #6 性能模型误判、#8 背压策略（部分）。
+> 本规范是 AIWeave 的 P1 规范之一，对应痛点 #6 性能模型误判、#8 背压策略（部分）。
 
 ---
 
