@@ -163,11 +163,11 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 
 | Skill | 与 design-spec 的关系 |
 | --- | --- |
-| **`/design-solution`**（预留 / 待实现） | 输入需求 → 按六视角逐个过决策树 → 产出 §6 的技术方案 TRD |
+| **`/design-solution`**（A0 设计类 · 上游执行器） | 输入需求 → 按六视角逐个过决策树 → 产出 §6 的技术方案 TRD |
 | `/io-review` / `/concurrency-review` / `/performance-review` | 审计代码时，命中反模式可回链到对应 design-spec/0X §6 的选型建议 |
 | `/sync-feature-to-docs`（B1） | 需求迭代触及某视角时，先回看对应 lens 是否需要更新决策结论 |
 
-> 本版只建立 `design-spec/` 六视角骨架；`/design-solution` Skill 作为下一步演进项预留，不在本版交付。
+> 本版同时交付 `design-spec/` 六视角骨架与其唯一执行器 `/design-solution`（模板见 [`templates/skills/design-solution/SKILL.md`](../templates/skills/design-solution/SKILL.md)，已在 INDEX / OPERATIONS / PRINCIPLES / skills-spec 登记为 A0 设计类 Skill）。后续新增架构维度时，按 §9 维护流程评估是否扩 lens。
 
 ---
 
