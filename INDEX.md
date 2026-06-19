@@ -19,7 +19,7 @@
 | `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（三条 IO 铁律） |
 | `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
 | `docs-spec/27_deployment_runtime` 部署与运行时生命周期 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（容器化部署 / 优雅启停 / 探针） |
-| `design-spec/*` 架构设计方法论（六视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
+| `design-spec/*` 高性能架构方法论（六视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
 | Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
@@ -84,7 +84,7 @@
 | 26 | [docs-spec/26_config_center_spec.md](docs-spec/26_config_center_spec.md) | docs/architecture/config.md §6-§9 | **配置中心与凭据加密规范**：配置上云权威源模型 / 配置中心 Client 抽象与拉取落盘编排 / 凭据对称加密（密钥应用层持有不入库）/ 启动期 fail-fast 加载时序（治理 config.md §6-§9，与 04 §2 边界划分） |
 | 27 | [docs-spec/27_deployment_runtime_spec.md](docs-spec/27_deployment_runtime_spec.md) | docs/architecture/deployment.md | **部署与运行时生命周期规范**：部署产物蓝图（镜像/编排/流水线）/ 容器镜像约束 / 健康探针分层语义（liveness/readiness/startup）/ 启动就绪时序（衔接 26）/ 优雅关闭时序（drain + 提交位点，对账 20 §1.1）/ 发布回滚策略（与 18 §11.5.4 边界）+ B1 反向同步规则。补齐"重建产物能上线"的第一性闭环 |
 
-## design-spec/ —— 架构设计方法论（技术方案生成参考）
+## design-spec/ —— 高性能架构方法论（技术方案生成参考）
 
 编号 00-06，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。
 

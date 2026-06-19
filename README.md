@@ -1,4 +1,4 @@
-# AIWeave — Go 后端工程「AI 原生 + AI 可重建 + 架构设计」规范
+# AIWeave — Go 后端工程「AI 原生 + AI 可重建 + 高性能架构」规范
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![docs-spec](https://img.shields.io/badge/docs--spec-28-informational.svg)](docs-spec/)
@@ -17,11 +17,11 @@
 
 > *docs/ 是系统的完整蓝图，.claude/skills/ 是 AI 的操作手册。仅凭这两者，AI 可以从零重建整个工程。*
 
-AIWeave 把这一断言落地为：**架构设计方法论 + 目录结构规范 + 文档内容规范 + Skill 步骤化规范 + 工作流 + 自检清单 + 可复制骨架**，让任何符合规范的 Go 后端工程都能享受"AI 原生 + AI 可重建"的红利。
+AIWeave 把这一断言落地为：**高性能架构方法论 + 目录结构规范 + 文档内容规范 + Skill 步骤化规范 + 工作流 + 自检清单 + 可复制骨架**，让任何符合规范的 Go 后端工程都能享受"AI 原生 + AI 可重建 + 高性能架构"三重红利。
 
 > **三支柱**——AIWeave 不只"事后织文档"，也**参与架构决策**：
 >
-> - **`design-spec/`** 架构设计方法论 —— 面对需求**怎么做出**架构决策（技术方案 / TRD 生成参考）
+> - **`design-spec/`** 高性能架构方法论 —— 面对需求**怎么做出**架构决策（技术方案 / TRD 生成参考）
 > - **`docs-spec/`** 文档表示规范 —— 决策**怎么写下来**（精准到可重建代码）
 > - **`skills-spec/`** Skill 执行规范 —— AI **怎么按文档生成**代码
 >
@@ -122,7 +122,7 @@ AIWeave 把这一断言落地为：**架构设计方法论 + 目录结构规范 
 
 ---
 
-## 2.5 第三支柱：design-spec 架构设计方法论
+## 2.5 第三支柱：design-spec 高性能架构方法论
 
 `design-spec/` 回答 docs-spec 不回答的问题——**面对需求，怎么"做出"架构决策**，而不是决策定了之后怎么写下来。它是"技术方案(TRD)生成"的参考，按 **六大决策视角（lens）** 组织，并内置一套从生产实践沉淀的**高性能基线**：
 
@@ -181,7 +181,7 @@ aiweave/
 │   ├── 26_config_center_spec.md             # 配置中心与凭据加密（配置上云 + 密钥不入库 + fail-fast）
 │   └── 27_deployment_runtime_spec.md        # 部署与运行时生命周期（部署产物 + 探针分层 + 优雅启停 + 发布回滚）
 │
-├── design-spec/             # 🆕 架构设计方法论（第三支柱 · 技术方案生成参考 · 编号 00-06）
+├── design-spec/             # 🆕 高性能架构方法论（第三支柱 · 技术方案生成参考 · 编号 00-06）
 │   ├── 00_design_overview.md       # 设计方法论总纲（六视角清单 + 统一 lens 九节骨架 + 双源真相边界 + TRD 产物）
 │   ├── 01_io_design.md      ⭐     # IO 设计决策（三维度 + 读写路径分治 + 三铁律 + 聚合器 + 批量写极致；引用 docs-spec/25）
 │   ├── 02_data_model_design.md     # 数据建模决策（数据访问层范式 / 分库分表+shard并行 / 覆盖索引+ICP / 组装层 map 入参）
