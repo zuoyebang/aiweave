@@ -24,6 +24,7 @@
 | 海量小映射 | "`{name}` → `{id}` 的映射可达数亿条" |
 | 字段演进 | "给既有表加 / 改 / 弃字段" |
 | DB→API 组装 | "把模型组装成响应，含关联数据" |
+| 深分页 / 大结果集 | "按 `{field}` 翻很深的页 / 导出 / 遍历全量 `{entity}`" |
 
 ---
 
@@ -92,6 +93,20 @@ DB 模型 → API 响应的组装：
 
 > 覆盖索引是"消灭往返"在 DB 层的延伸——缓存 miss 回源 / 直查走覆盖索引免回表（读路径见 [`01 §3.1`](01_io_design.md)）。索引表示规则（DDL / 索引定义）真相源在 [`docs-spec/05`](../docs-spec/05_schema_design_spec.md)。
 
+### 3.6 分页与大结果集：游标分页 + 流式（消灭 OFFSET 深扫描）
+
+```
+怎么翻页 / 取大结果集？
+│
+├─ 浅分页（只看前几页） ──► OFFSET / LIMIT 可接受（offset 小）
+├─ 深分页 / 无界下翻 ────► keyset（游标）分页：`WHERE {有序唯一键} {>/<} {游标} ORDER BY … LIMIT n`
+│                          ↳ 走索引定位，O(log N)；消灭 OFFSET 的"扫 N 行再丢弃"（O(N)，随页深线性劣化）
+│                          ↳ 游标 = 上页末行的（有序键[+ 唯一 tiebreaker]）；不可随机跳页，但可无限下翻
+└─ 全量遍历 / 导出 ──────► 流式 / 分块拉取（keyset 游标 + 固定 chunk）→ 封顶单请求内存，不一次性 load 全表
+```
+
+> keyset 依赖"有序唯一键 + 支撑索引"（覆盖索引更佳，§3.5）；排序列非唯一时追加唯一 tiebreaker（如主键）保稳定游标。索引支撑登记真相源见 [`docs-spec/05 §7`](../docs-spec/05_schema_design_spec.md)；往返 / 扫描行数回归见 [`docs-spec/25 §7`](../docs-spec/25_io_aggregation_spec.md)。
+
 ---
 
 ## 4. 默认选型与升级路径
@@ -103,6 +118,7 @@ DB 模型 → API 响应的组装：
 | 容量 | 单表不分 | 海量 → id%N；纯追加 → 按月分表 |
 | 库划分 | 单库 | 写风暴 / 强一致混杂 → 按读写模式分库 + 持久化分级 |
 | 海量小映射 | 独立行 | 数亿条 → Hash 分桶 |
+| 分页 / 大结果集 | OFFSET / LIMIT | 深分页（offset 大）→ keyset 游标分页；全量导出 → 流式分块拉取 |
 
 ---
 
@@ -115,6 +131,7 @@ DB 模型 → API 响应的组装：
 | id%N 水平分表 | — | 高（并行 IN） | 中 | 中（需路由函数） | 海量结构化 |
 | 按月分表 | — | 高 | 低（纯追加） | 低（预建+归档） | 流水 |
 | Hash 分桶映射 | — | 高 | 低 | 中 | 海量小映射省内存 |
+| keyset 游标分页 | — | 高（恒定，走索引） | — | 中（需有序键 + 游标） | 深分页 / 无界下翻 |
 
 ---
 
@@ -131,6 +148,8 @@ DB 模型 → API 响应的组装：
 | 过度索引（每个二级索引都是写放大 + 空间） | 按查询路径建索引，定期审无用索引 |
 | select 判有无再分别 insert/update | 批量 Upsert（`ON DUPLICATE KEY`/`ON CONFLICT`） |
 | 对外暴露真实主键 | 加密 ID（05 §确定性加密），真实 PK 仅内部用 |
+| 深分页用 `LIMIT {大 offset}, n`（扫 N 行丢弃，随页深线性劣化） | keyset 游标分页（`WHERE 有序键 > 游标`） |
+| 一次性 load 大结果集进内存（导出 / 遍历） | 流式 / 分块拉取（游标 + 固定 chunk） |
 
 > 字段演进安全路径、DDL 精度、Redis Key 注册表规则正文见 [`docs-spec/05`](../docs-spec/05_schema_design_spec.md)。
 
@@ -138,7 +157,7 @@ DB 模型 → API 响应的组装：
 
 ## 7. 产出与落地
 
-结论落到 **`docs/schema/database_design.md`**，按 [`docs-spec/05`](../docs-spec/05_schema_design_spec.md) 表示（DDL / 分库 / 分表函数 / Redis Key 注册表 / GORM Model）。批量 / shard 并行编排落 `io_contract.md`（[`01`](01_io_design.md)）；Schema 表达不了的不变量落 `service/service_design.md`（docs-spec/09 §7）。
+结论落到 **`docs/schema/database_design.md`**，按 [`docs-spec/05`](../docs-spec/05_schema_design_spec.md) 表示（DDL / 分库 / 分表函数 / Redis Key 注册表 / GORM Model）。批量 / shard 并行编排落 `io_contract.md`（[`01`](01_io_design.md)）；Schema 表达不了的不变量落 `service/service_design.md`（docs-spec/09 §7）。分页形态（keyset 游标 / 流式）落 `io_contract.md` 读路径，由 [`docs-spec/05 §7`](../docs-spec/05_schema_design_spec.md) 索引支撑。
 
 ---
 
@@ -150,6 +169,7 @@ DB 模型 → API 响应的组装：
 | DDL 字段精度 / 分库 / 分表函数 / Redis Key 注册表 | 引用 | ✅ 真相源 | 不写 | 不写 |
 | 缓存 Key 模式 / Hash 字段映射 / Hash 分桶存储 | 不写 | 不写 | ✅ 真相源 | 不写 |
 | 批量读三段式 / 聚合并行编排 | 引用 | 不写 | 不写 | ✅ 真相源 |
+| 分页与大结果集选型（keyset / 流式） | ✅ 真相源 | 引用（§7 索引支撑） | 不写 | 引用（读路径 / 往返） |
 
 ---
 
@@ -208,7 +228,7 @@ key="cname_"+bucket; field=原始名称; value={"1":"id1",...}（一名可多 id
 ```
 为何 Hash 不用海量独立 String：N 条映射共享一个 key 的开销远小于 N 个独立 String（省 robj + dictEntry + TTL 元数据），key 维度统一 EXPIRE。存储细节见 [`05 §参考示例`](05_caching_design.md)。
 
-### 9.6 覆盖索引 + ICP（示例）
+### 9.6 覆盖索引 + ICP
 
 ```sql
 -- 覆盖索引：查询所需列 (b,c) 全在索引 (a,b,c) 里 → 不回表
@@ -218,6 +238,18 @@ SELECT b, c FROM t WHERE a = ?;            -- EXPLAIN: Using index（index-only 
 SELECT * FROM t WHERE a = ? AND c LIKE ?;  -- EXPLAIN: Using index condition
 -- 前缀索引（长列）：以选择性换索引体积
 CREATE INDEX idx_prefix ON t(longcol(20));
+```
+
+### 9.7 keyset 游标分页 vs OFFSET 深分页
+
+```sql
+-- ❌ 深分页：扫描并丢弃前 100000 行（随 offset 线性劣化）
+SELECT … FROM t WHERE status = 1 ORDER BY id DESC LIMIT 100000, 20;
+-- ✅ keyset：游标定位走索引，与页深无关
+SELECT … FROM t WHERE status = 1 AND id < {last_id} ORDER BY id DESC LIMIT 20;   -- 游标 = 上页末行 id
+-- 排序列非唯一 → 加唯一 tiebreaker 保稳定游标：
+--   WHERE (sort_col, id) < ({last_sort}, {last_id}) ORDER BY sort_col DESC, id DESC LIMIT 20
+-- 全量遍历 / 导出：同一 keyset 游标循环拉取固定 chunk（如每批 1000），封顶内存
 ```
 
 
