@@ -1,6 +1,6 @@
 # 00 - 高性能架构方法论总纲
 
-> 规定 `design-spec/` 这一支柱的定位、统一骨架、与 `docs-spec/` 的边界，以及"技术方案生成"如何走完六大决策视角。
+> 规定 `design-spec/` 这一支柱的定位、统一骨架、与 `docs-spec/` 的边界，以及"技术方案生成"如何走完七大决策视角。
 >
 > 本支柱回答 `docs-spec/` 不回答的问题：**面对一个需求，怎么"做出"架构决策**——而不是决策定了之后怎么写下来。
 
@@ -69,7 +69,7 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 
 ---
 
-## 3. 六大决策视角清单（强制）
+## 3. 七大决策视角清单（强制）
 
 每个视角是一个**决策透镜（lens）**：把需求中的某一类架构问题，从"识别形态"一路推到"推荐选型"。每个视角的**决策真相源**在 `design-spec/0X`，**表示真相源**仍在对应 `docs-spec/NN`（避免双源真相，见 §5）。
 
@@ -81,6 +81,7 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 | **事务一致性** | 事务边界、补偿、幂等、一致性窗口 | [`04_transaction_design.md`](04_transaction_design.md) | `service/transaction_design.md` | [`docs-spec/21`](../docs-spec/21_distributed_transaction_spec.md) |
 | **缓存策略** | 缓存层级、Key 设计、回源、失效与一致性 | [`05_caching_design.md`](05_caching_design.md) | `cache/cache_design.md` | [`docs-spec/06`](../docs-spec/06_cache_design_spec.md) |
 | **稳定性** | 熔断 / 降级 / 限流 / 性能合约的选型与参数 | [`06_resilience_design.md`](06_resilience_design.md) | `circuit_breaker/circuit_breaker_design.md`、`architecture/performance_contract.md` | [`docs-spec/12`](../docs-spec/12_circuit_breaker_spec.md)、[`docs-spec/22`](../docs-spec/22_performance_contract_spec.md) |
+| **尾延迟与过载** 🆕 | P99/P999 长尾治理、过载有序降级（对冲 / 自适应限制 / load shedding / 重试预算） | [`07_tail_latency_design.md`](07_tail_latency_design.md) | `architecture/performance_contract.md`、`architecture/cross_service_contract.md` | [`docs-spec/22`](../docs-spec/22_performance_contract_spec.md)、[`docs-spec/24`](../docs-spec/24_cross_service_contract_spec.md)、[`docs-spec/12`](../docs-spec/12_circuit_breaker_spec.md) |
 
 > 视角不要求每个需求都全过一遍——由需求形态触发（见各视角 §2 输入信号）。但 IO 视角对"涉及多次数据访问 / 集合处理 / 多依赖编排"的需求**强制过一遍**。
 
@@ -96,6 +97,7 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 | **缓存分片可扩展**（05 §3.6） | IO（01）+ 数据建模（02） | 跨分片批量按分片分组并行（01 聚合器）；大 key 拆分用 Hash 分桶（02 / 05 存储） |
 | **数据建模 shard 并行**（02 §3.3） | IO（01）+ 并发（03） | 三段式批量编排（01）；多 shard 并行的池（03） |
 | **稳定性**（06） | 全部数据访问 | 连接池基线 / 熔断包所有 DB·缓存·RPC；数据层禁日志支撑数据访问层可无副作用复用 |
+| **尾延迟治理**（07） | IO（01）+ 并发（03）+ 稳定性（06） | 对冲叠加扇出 best-effort（01 §3.4）；自适应并发限制是静态 Little 池（03）的升级；与熔断 / 降级叠加而非替代（06，分界见 07 §8） |
 
 > **IO（01）是枢纽**：几乎所有数据访问类需求都先过 IO 视角，再由它牵出缓存 / 数据建模 / 并发 / 事务。读写路径分治（§2.3）本身就是横跨 IO / 缓存 / 事务三视角的同一条元方法。
 
@@ -163,11 +165,11 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 
 | Skill | 与 design-spec 的关系 |
 | --- | --- |
-| **`/design-solution`**（A0 设计类 · 上游执行器） | 输入需求 → 按六视角逐个过决策树 → 产出 §6 的技术方案 TRD |
+| **`/design-solution`**（A0 设计类 · 上游执行器） | 输入需求 → 按七视角逐个过决策树 → 产出 §6 的技术方案 TRD |
 | `/io-review` / `/concurrency-review` / `/performance-review` | 审计代码时，命中反模式可回链到对应 design-spec/0X §6 的选型建议 |
 | `/sync-feature-to-docs`（B1） | 需求迭代触及某视角时，先回看对应 lens 是否需要更新决策结论 |
 
-> 本版同时交付 `design-spec/` 六视角骨架与其唯一执行器 `/design-solution`（模板见 [`templates/skills/design-solution/SKILL.md`](../templates/skills/design-solution/SKILL.md)，已在 INDEX / OPERATIONS / PRINCIPLES / skills-spec 登记为 A0 设计类 Skill）。后续新增架构维度时，按 §9 维护流程评估是否扩 lens。
+> 本版同时交付 `design-spec/` 七视角骨架与其唯一执行器 `/design-solution`（模板见 [`templates/skills/design-solution/SKILL.md`](../templates/skills/design-solution/SKILL.md)，已在 INDEX / OPERATIONS / PRINCIPLES / skills-spec 登记为 A0 设计类 Skill）。后续新增架构维度时，按 §9 维护流程评估是否扩 lens。
 
 ---
 

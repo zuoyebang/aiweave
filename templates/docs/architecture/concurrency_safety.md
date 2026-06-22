@@ -39,6 +39,7 @@
 | `{ns}Cache map` | `helpers/{ns}_cache.go` | HTTP handler + `{flush-task}` | `sync.RWMutex` | 读多写少 |
 | `{batch-ch} chan {Event}` | `service/{module}/dispatcher.go` | producer goroutine + consumer pool | 内部 channel buffer={N} | 满时丢弃尾部 |
 | `{pool-name} *sql.DB` | `helpers/db.go` | 所有 goroutine | `database/sql` 内部 | MaxOpen={N}、MaxIdle={N} |
+| `{hot-counter} [N]分片` | `helpers/{ns}_counter.go` | 所有 goroutine（高频写 + 周期读求和） | 分片计数 + 缓存行对齐（无锁） | 写≫读；分片按缓存行 padding 防 false-sharing |
 
 > **维护规则**：每新增一个跨 goroutine 共享的变量 / channel，本表必须新增一行；删除时同步移除。
 
@@ -173,6 +174,8 @@
 | 向已关闭的 channel 发送 | panic | select + done channel | `R-CONC-SEND-CLOSED` |
 | `defer` 在 for 循环内 | 资源延迟释放，可能 OOM | 抽子函数或显式 Close | `R-RESOURCE-DEFER-LOOP` |
 | 忽略 `ctx.Done()` 的常驻 goroutine | goroutine 泄漏 | select case `<-ctx.Done()` | `R-CONC-GOROUTINE-LEAK` |
+| 超高频计数用单点 Mutex / 单 atomic（缓存行总线风暴） | 高争用下计数吞吐塌陷 | 分片计数（striped，按 P/CPU 散列）读时求和 | `R-CONC-COUNTER-CONTENTION` |
+| 分片 / 原子计数器未按缓存行对齐（false-sharing） | 相邻计数器共享 64B 缓存行，分片白拆 | 按缓存行 padding / 独占 cache line | `R-CONC-FALSE-SHARING` |
 
 > grep 命中为**信号级**（🟡 待复核），最终判定权在人工 reviewer。
 

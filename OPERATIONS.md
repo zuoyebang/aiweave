@@ -19,7 +19,7 @@
 ## W1：设计先行（基础工作流，所有其他工作流的内核）
 
 ```
-⓪  用 design-spec 六视角做架构决策 → 技术方案(TRD)（复杂需求强烈推荐，执行器 /design-solution）
+⓪  用 design-spec 七视角做架构决策 → 技术方案(TRD)（复杂需求强烈推荐，执行器 /design-solution）
         ↓
 ①  写 / 改 md（按 TRD 落地，技术方案文档）
         ↓
@@ -304,7 +304,7 @@ Step 5：发布前必须零差异
 ## 工作流之间的关系
 
 ```
-A0 设计（design-spec 六视角 / /design-solution → TRD）
+A0 设计（design-spec 七视角 / /design-solution → TRD）
    │  复杂需求先做架构决策，产出 TRD（决策记录 + 落地索引）；简单 CRUD 可跳过
    ▼
 W1（设计先行）
@@ -367,6 +367,11 @@ W8 定期审计 — 跨组（兜底机制）
 
 - [ ] 是否有敏感数据（password/secret/token/手机号）写入日志？
 - [ ] 错误返回是否暴露内部细节给外部用户？
+
+### 1.7 尾延迟与运行时（敏感接口才需）
+
+- [ ] 尾延迟 / 过载敏感接口 → 是否评估对冲 / 重试预算 / load shedding？（决策见 [`design-spec/07`](design-spec/07_tail_latency_design.md)；对冲 / 重试只在幂等时启用，重试预算封顶）
+- [ ] 容器是否对齐 `GOMAXPROCS`（automaxprocs）/ `GOMEMLIMIT`（mem limit ~90% 软上限）？
 
 ---
 
@@ -569,6 +574,7 @@ W8 定期审计 — 跨组（兜底机制）
 | 循环内单条查询（N+1）/ 独立串行编排 | L0 hooks(IO 铁律) + L4 io-review + L5 IO 计数断言 |
 | 配置凭据明文 / 密钥硬编码入库 | L0 hooks(凭据可选) + L4 doc-sync-check(R-CONF-*) |
 | 优雅关闭缺排空 / 探针误配 / 常驻 goroutine 泄漏 | L4 doc-sync-check(R-SHUTDOWN-*/R-PROBE-*/R-DEPLOY-*) + L4 concurrency-review(§1.1 goroutine 对账) |
+| 重试无 jitter / 对冲包裹非幂等 / 部署无 GOMAXPROCS 对齐 | L0 hooks(R-TAIL-RETRY-NOJITTER/R-TAIL-HEDGE-UNSAFE/R-DEPLOY-GOMAXPROCS) + L3 §1.7 + L4 performance-review |
 | 漏"文档同步：..."声明 | L0 hooks(双向同步 Stop) + L3 §1.5 |
 
 防御层级的设计哲学：**L0 是自动拦截（不依赖自觉，机械执行），L1-L2 是事前预防（让 AI 不犯错），L3 是事中自检（一次 PR 内的自查），L4 是事后审计（PR 合并前的兜底），L5 是运行时证明（CI 阻断错误代码）**。任一层失效，下一层兜底。

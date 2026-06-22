@@ -252,6 +252,18 @@ WAL 单写多读连接池（嵌入式库进程内 CPU-bound 访问，按核数�
 
 > 写路径削峰编排（何时该 Redis-first、delta 摊销机制）见 [design-spec/01_io_design.md §3.2](../../../design-spec/01_io_design.md)；最终一致 + 边界兜底的事务取舍见 [design-spec/04_transaction_design.md](../../../design-spec/04_transaction_design.md)。
 
+### 4.6 写策略登记
+
+> 登记每个缓存采用哪种写策略（cache-aside 失效优先 / write-through 同步写穿 / write-back 写回异步 flush）及触发理由。**只登记选了什么 + 触发；何时该选哪种的决策方法见下方引用。**
+
+| 缓存（Key 命名空间） | 写策略 | 触发理由 |
+|---------------------|--------|---------|
+| `{ns}` | cache-aside 失效优先（改库后删缓存） | 默认（读多写少、容忍短窗陈旧） |
+| `{ns-N}` | write-through 同步写穿（同步写缓存 + 库） | 写后即读 / 一致性敏感 |
+| `{state-1}` | write-back 写回（写缓存 + delta 增量异步 flush，见 §4.1-§4.5） | 计数热点削峰（高频写聚合，热路径 0 落库） |
+
+> 决策方法（三种写策略如何按"写后即读 / 一致性敏感 / 计数热点"判定，强一致延迟双删 / 订阅 binlog 升级）见 [design-spec/05_caching_design.md §4 写策略轴](../../../design-spec/05_caching_design.md)；write-back 削峰编排见 [design-spec/01_io_design.md §3.2](../../../design-spec/01_io_design.md) + [design-spec/04_transaction_design.md](../../../design-spec/04_transaction_design.md)。
+
 ## 5. MQ 异步落库（如有）
 
 ### 5.1 消息结构

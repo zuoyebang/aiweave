@@ -130,10 +130,13 @@
   ▼
 startup 探针通过 → 启动常驻 goroutine（按 concurrency_safety.md §1.1 登记的清单）
   ▼
-readiness 置 true（此刻才开始 accept 外部流量）
+预热（可选 / 尾敏感服务强烈推荐）：连接池预拨 MinIdle 条连接 + 缓存预热（05 §3.8）
+  │  避开首请求的 TCP/TLS 握手与缓存 miss 长尾（决策见 design-spec/07 §3.5）
+  ▼
+readiness 置 true（此刻才开始 accept 外部流量；置 true 晚于预热）
 ```
 
-**就绪铁律**：readiness 置 true **必须**晚于"配置就绪 + 资源初始化 + 信号处理注册"。任何"未注册关闭信号就 accept 流量"或"资源未就绪就置 readiness"都违反本节。
+**就绪铁律**：readiness 置 true **必须**晚于"配置就绪 + 资源初始化 + 信号处理注册（+ 预热，尾敏感服务）"。任何"未注册关闭信号就 accept 流量"或"资源未就绪就置 readiness"都违反本节。
 
 ---
 
@@ -200,6 +203,8 @@ readiness 置 true（此刻才开始 accept 外部流量）
 | 副本数 | 声明最小副本（避免单点）；有状态/选主任务说明唯一性保证 | — |
 | 水平弹性 | 弹性触发指标取自 23 observability 的服务级指标（如 CPU / QPS / 队列深度）；禁止用业务量纲指标做弹性 | — |
 | 内存 limit 与预算对齐 | limit 与 [`22 §3`](22_performance_contract_spec.md) 内存预算一致，避免 OOMKilled | — |
+| CPU limit ↔ `GOMAXPROCS` | `GOMAXPROCS` 必须对齐容器 CPU limit（automaxprocs 读 cgroup 配额）；默认=宿主核数 → 容器被限流时 P 数超配额 → 调度争用 + 节流抖动抬 P99 | `R-DEPLOY-GOMAXPROCS` |
+| mem limit ↔ `GOMEMLIMIT` | `GOMEMLIMIT` 设为 mem limit 的 ~90%（软上限），GC 提前回收防 OOMKill；与 [`22 §3.4`](22_performance_contract_spec.md) 运行时旋钮一致 | `R-RUNTIME-MEMLIMIT` |
 ```
 
 ---
@@ -217,6 +222,8 @@ readiness 置 true（此刻才开始 accept 外部流量）
 - readiness 置 true 必须晚于"配置就绪（26）+ 资源初始化 + 信号注册"；未就绪即 accept → 拒绝
 - 容器镜像运行层**禁止** root 用户 → `R-DEPLOY-ROOT`；编排清单**禁止**缺 requests/limits → `R-DEPLOY-NO-LIMITS`
 - 镜像引用**禁止**可变 tag（`latest`）；必须内容寻址（digest / 不可变 tag）
+- 部署进容器 → `GOMAXPROCS` 必须对齐 CPU limit（automaxprocs）、`GOMEMLIMIT` 对齐 mem limit（~90%）；缺失 → `R-DEPLOY-GOMAXPROCS` / `R-RUNTIME-MEMLIMIT`
+- 尾敏感 / 高扇出服务 → 启动时序应含连接池预热（MinIdle 预拨）+ 缓存预热，readiness 晚于预热（缺失则头部 P99 飙高，决策见 design-spec/07）
 - 含不兼容 Schema 变更的发布 → 回滚前必须确认 05 §8 软兼容已就位
 - 拿不准关闭是否覆盖了全部常驻 goroutine → 主动与 20 §1.1 清单对账，不擅自略过
 ```
@@ -234,8 +241,10 @@ readiness 置 true（此刻才开始 accept 外部流量）
 | 对外服务缺 readiness / liveness 端点 | 编排无法判定就绪/存活，流量打到未就绪实例 | `R-PROBE-MISSING` |
 | 容器以 root 运行 | 提权风险 | `R-DEPLOY-ROOT` |
 | 编排清单缺 requests/limits | 资源争抢 / OOMKilled / 调度不可控 | `R-DEPLOY-NO-LIMITS` |
+| `GOMAXPROCS` 未对齐容器 CPU limit（用默认宿主核数） | 调度争用 + 节流抖动抬 P99 | `R-DEPLOY-GOMAXPROCS` |
+| `GOMEMLIMIT` 未设 / 未对齐 mem limit | GC 太晚 → OOMKilled | `R-RUNTIME-MEMLIMIT` |
 
-> grep 锚定位为"信号级"非"判定级"。命中标 🟡 待复核，最终判定权在人工 reviewer。误报通过行末 `// aiweave:allow=<rule-id>` 注解抑制（每文件 ≤ 3 处）。完整锚定义见 `ai_dev_guide.md §10`；由 `/doc-sync-check`（折叠 `R-SHUTDOWN-*` / `R-PROBE-*` / `R-DEPLOY-*`，参照 26 的 `R-CONF-*` 模式）+ L0 Hooks 双层兜底。
+> grep 锚定位为"信号级"非"判定级"。命中标 🟡 待复核，最终判定权在人工 reviewer。误报通过行末 `// aiweave:allow=<rule-id>` 注解抑制（每文件 ≤ 3 处）。完整锚定义见 `ai_dev_guide.md §10`；由 `/doc-sync-check`（折叠 `R-SHUTDOWN-*` / `R-PROBE-*` / `R-DEPLOY-*` / `R-RUNTIME-*`，参照 26 的 `R-CONF-*` 模式）+ L0 Hooks 双层兜底。
 
 ---
 
@@ -250,6 +259,8 @@ readiness 置 true（此刻才开始 accept 外部流量）
 | 新增 / 修改探针 handler（`/live` `/ready` 等） | §3 探针语义表同步；liveness 误加依赖检查 → 拒绝（`R-PROBE-LIVENESS-DEEP`） |
 | 修改 `{Dockerfile-path}` / 编排清单 | §1 产物清单 + §2 镜像约束 + §7 配额同步 |
 | 修改发布策略 / 流水线 | §6 发布回滚策略同步 |
+| 编排清单改 CPU / mem limit | §7 校对 `GOMAXPROCS` / `GOMEMLIMIT` 对齐；与 22 §3.4 对账 |
+| 新增连接池预热 / MinIdle 预拨 | §4 启动时序预热节点同步 |
 | 出现 root 运行 / 缺 limits / 可变 tag | 命中禁止清单 → 拒绝合并 |
 
 ### 14.2 维护触发

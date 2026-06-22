@@ -34,6 +34,7 @@
 | 队列 / channel 容量上限 | 不写 | ✅ 真相源（§6.1） |
 | 上游超时 vs 下游处理时间协调 | 不写 | ✅ 真相源（§6.2） |
 | 优雅降级层级（L1/L2/L3 业务降级） | 引用 22 §6.3 | ✅ 真相源 |
+| 自适应限制 / 对冲 / 重试预算 / load shedding 档位 | 引用（与降级 §5 联动） | ✅ 真相源（§6.4，决策见 design-spec/07） |
 
 **22 §6 中所有涉及"熔断器参数"的描述必须显式写"详见 12_circuit_breaker §X"**，不重复。
 
@@ -62,12 +63,13 @@
 | 指标 | 目标值 | 测量方式 | 降级阈值 |
 |------|--------|---------|---------|
 | P99 latency | < `{P99-ms}` ms | APM span / Prometheus histogram | > `{P99-degrade-ms}` ms 告警 |
+| P999 latency | < `{P999-ms}` ms | APM span / Prometheus histogram | > `{P999-degrade-ms}` ms 告警 |
 | QPS | > `{QPS-target}` | Prometheus counter rate | < `{QPS-floor}` 告警 |
 | 内存 | < `{Memory-target}` MB RSS | `/proc/meminfo` | > `{Memory-degrade}` MB 告警 |
 | CPU | < `{CPU-target}` core | container stats | > `{CPU-degrade}` core 告警 |
 ```
 
-> **占位符示例**：`{P99-ms}` 通常取 50；`{QPS-target}` 通常取 10000；具体由工程业务决定。
+> **占位符示例**：`{P99-ms}` 通常取 50；`{P999-ms}` 通常取 P99 的 2-4×（高扇出 / 尾敏感服务由 P999 主导，决策见 [`design-spec/07 §1`](../design-spec/07_tail_latency_design.md)）；`{QPS-target}` 通常取 10000；具体由工程业务决定。
 
 ---
 
@@ -118,6 +120,16 @@
 
 - slice / map 初始容量必须显式（`make([]T, 0, N)` 不写 `make([]T, 0)`）
 - 已知大小的 slice 必须预分配（追加超过 1 次即视为已知）
+
+### 3.4 Go 运行时旋钮（GC / 调度 / 内存上限）
+
+| 旋钮 | 设定 | 理由 |
+|------|------|------|
+| `GOMAXPROCS` | = 容器 CPU limit（用 automaxprocs 自动对齐；禁默认=宿主核数） | 默认按宿主核数 → 容器被 CPU 限流时 P 数远超配额 → 调度争用 + 节流抖动，直接抬高 P99 |
+| `GOMEMLIMIT` | = 容器 mem limit × `{0.9}`（软上限，留头部给非堆） | 触顶时 GC 提前更激进，防 OOMKill；与 §3.1 单请求堆预算叠加（预算控单请求，GOMEMLIMIT 控进程总量） |
+| `GOGC` | 默认 100；高分配率热路径可调高（如 200）换更少 GC 周期 | GOGC 越高 GC 越少但峰值内存越高 → 必须与 GOMEMLIMIT 配对（GOGC 控频率，GOMEMLIMIT 兜上限） |
+
+- 三旋钮的值随容器配额走，必须与 [`deployment.md`](deployment.md) 的 CPU / mem limit 对齐（部署侧硬规则 `R-DEPLOY-GOMAXPROCS` / `R-RUNTIME-MEMLIMIT` 见 docs-spec/27 §7）；选型取舍见 design-spec/03
 ```
 
 ---
@@ -204,6 +216,21 @@
 
 L1 的熔断器参数（K / 窗口 / 采样数）**不写在本文档**，详见 [`docs-spec/12 §2`](12_circuit_breaker_spec.md)。
 
+### 9.4 自适应过载与尾延迟治理（§6.4）
+
+> 决策真相源在 [`design-spec/07`](../design-spec/07_tail_latency_design.md)（尾延迟三源 / 对冲 / 自适应限制 / load shedding / 重试预算的选型与决策树）；本节仅承载"参数与档位"的表示槽位，不复制决策树。
+
+```markdown
+| 维度 | 登记内容 | 引用 |
+|------|---------|------|
+| 自适应并发限制 | 算法（AIMD / 梯度式）+ min-RTT 窗口 + limit 上下界 | design-spec/07 §3.3 |
+| 对冲 / 备份请求 | 触发分位（tie-delay 如 P95）+ 对冲量上限（如 ≤5%）+ 仅幂等白名单 | cross_service_contract.md §3（docs-spec/24） |
+| 重试预算 | 重试占比上限（如 10%）+ backoff 基数 + jitter 比例 | cross_service_contract.md §3（docs-spec/24） |
+| 优先级 / 截止 load shedding | 优先级分层（interactive/batch/bestEffort）+ 饱和信号（队列/CPU/limit 触顶）+ 丢弃顺序 | 与 docs-spec/12 §5 降级联动 |
+```
+
+**关系约束**：对冲 / 重试在下游饱和时**禁止启用**（会放大过载）——饱和判定与 §6.3 的 L1/L2/L3 降级、12 熔断联动；对冲量与重试量必须计入 §6.1 的下游并发 / 队列预算。
+
 ---
 
 ## 10. §7 性能回归测试
@@ -223,6 +250,17 @@ L1 的熔断器参数（K / 窗口 / 采样数）**不写在本文档**，详见
 ### 7.3 与 17_testing_design §4.9 的关系
 
 详细的基准测试 framework API 见 [`docs-spec/17 §4.9`](17_testing_design_spec.md)。本节仅承载"目标值 + 回归阈值"。
+
+### 7.4 生产持续 profiling（线上"分配 / CPU 去哪了"的证据）
+
+§7.1-§7.3 是**离线**回归；本节补**在线**观测——没有它，"IO 是第一性瓶颈"在生产只是假设而非证据。
+
+| 维度 | 要求 |
+|------|------|
+| pprof 端点 | 暴露 `/debug/pprof/*`（heap / allocs / profile(CPU) / goroutine / mutex / block），仅内网或鉴权后可达，**禁公网裸暴露** |
+| 采集方式 | 持续采样上报（如 Pyroscope / Parca）或按需抓取；热路径 P99 回归时优先看 alloc_space 火焰图定位分配源 |
+| 运行时指标 | `go_gc_duration_seconds` / `go_memstats_*` / `go_goroutines` 接入 [`observability.md`](observability.md)（详见 docs-spec/23 §3.3） |
+| 告警联动 | GC pause P99、分配速率、goroutine 数突增 → 告警阈值登记 [`observability.md §5.2`](observability.md) |
 ```
 
 ---
@@ -241,6 +279,8 @@ L1 的熔断器参数（K / 窗口 / 采样数）**不写在本文档**，详见
 - 新增数据库查询 → 必须说明索引命中情况
 - 新增内存缓存 → 必须在 §3 登记预分配策略
 - 新增 channel → 容量必须在 §6.1 登记
+- 部署进容器 → `GOMAXPROCS` 必须对齐 CPU limit、`GOMEMLIMIT` 必须对齐 mem limit（§3.4），禁用默认值裸跑
+- 新增对冲 / 重试 / 自适应限制 / load shedding → 必须在 §6.4 登记参数与档位（决策见 design-spec/07）
 ```
 
 ---
@@ -257,6 +297,9 @@ L1 的熔断器参数（K / 窗口 / 采样数）**不写在本文档**，详见
 | 新增 `*_bench_test.go` 文件 | §7.1 基准测试清单同步 |
 | 修改 SLA 数值（路由 / 配置） | §1 全局性能目标表同步 |
 | 新增同步外部 API 调用 | 检查是否在热路径；如是 → 拒绝合并 |
+| 入口 / 编排新增对冲 / 重试 / 自适应限制 / load shedding | §6.4 自适应过载登记（对冲与重试预算、限制参数、丢弃档位） |
+| 容器编排改 CPU / mem limit | §3.4 校对 `GOMAXPROCS` / `GOMEMLIMIT` 对齐；与 deployment.md §7 对账 |
+| 新增 `/debug/pprof` 暴露 / profiling 采集 | §7.4 登记端点与采集方式 |
 
 ### 12.2 维护触发
 

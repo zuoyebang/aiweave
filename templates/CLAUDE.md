@@ -403,6 +403,14 @@ md 与代码冲突时按规则 7 处理。
 | **对外服务缺 readiness/liveness 端点** | 流量打到未就绪实例 | 暴露探针 3 件套 | `R-PROBE-MISSING` |
 | **容器以 root 运行** | 提权风险 | 运行层声明非 root user | `R-DEPLOY-ROOT` |
 | **编排清单缺 requests/limits** | OOMKilled / 调度不可控 | 声明 requests+limits | `R-DEPLOY-NO-LIMITS` |
+| **`GOMAXPROCS` 未对齐容器 CPU limit（用默认宿主核数）** | 调度争用 + 节流抖动抬 P99 | automaxprocs 对齐 cgroup 配额 | `R-DEPLOY-GOMAXPROCS` |
+| **`GOMEMLIMIT` 未设 / 未对齐 mem limit** | GC 太晚 → OOMKilled | 设为 mem limit 的 ~90% 软上限 | `R-RUNTIME-MEMLIMIT` |
+| **重试无预算（占比无上限）** | 重试风暴放大级联故障 | 重试预算 ≤X% + 与熔断联动 | `R-TAIL-RETRY-NOBUDGET` |
+| **backoff 无 jitter（重试同步成群）** | 二次冲击波 | 指数退避 + 随机抖动 | `R-TAIL-RETRY-NOJITTER` |
+| **对冲 / 重试包裹非幂等调用** | 重复副作用 | 先幂等化；非幂等禁对冲 | `R-TAIL-HEDGE-UNSAFE` |
+| **冷启 readiness 早于预热（缓存 / 连接池）** | 流量打到冷实例，头部 P99 飙高 | readiness 晚于预热 | `R-TAIL-COLDSTART` |
+| **超高频计数用单点 Mutex / 单 atomic** | 缓存行总线风暴，计数吞吐塌陷 | 分片计数（striped）读时求和 | `R-CONC-COUNTER-CONTENTION` |
+| **分片 / 原子计数器未按缓存行对齐** | false-sharing，分片白拆 | padding 到 64B / 独占 cache line | `R-CONC-FALSE-SHARING` |
 
 ### 范围判定表
 
@@ -454,6 +462,11 @@ md 与代码冲突时按规则 7 处理。
 | **探针 handler（`/live` / `/ready` / `/startup`）新增 / 修改** | `docs/architecture/deployment.md` §3 探针分层语义 |
 | **`{Dockerfile-path}` / 编排清单 / CI-CD 流水线新增 / 修改** | `docs/architecture/deployment.md` §1 产物 + §2 镜像约束 + §7 配额弹性 |
 | **发布策略 / 回滚钩子调整** | `docs/architecture/deployment.md` §6 发布与回滚策略 |
+| **`main.go` / 编排清单新增 `GOMAXPROCS` / `GOMEMLIMIT` / automaxprocs** | `docs/architecture/deployment.md` §7 + `docs/architecture/performance_contract.md` §3.4 运行时旋钮 |
+| **启动时序新增连接池预热 / MinIdle 预拨 / 缓存预热** | `docs/architecture/deployment.md` §4 启动就绪（readiness 晚于预热） |
+| **入口 / 编排新增对冲 / 重试预算 / 自适应并发限制 / load shedding** | `docs/architecture/performance_contract.md` §6.4 自适应过载 + `cross_service_contract.md` §3（决策见 design-spec/07） |
+| **新增分片计数 / striped counter / 缓存行对齐 padding** | `docs/architecture/concurrency_safety.md` §2 共享状态注册表（决策见 design-spec/03 §3.5） |
+| **新增 `/debug/pprof` 暴露 / 持续 profiling 采集** | `docs/architecture/performance_contract.md` §7.4 生产 profiling + `observability.md` §3.3 |
 
 ### 输出格式
 

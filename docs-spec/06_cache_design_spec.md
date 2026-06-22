@@ -39,6 +39,7 @@ cache_design.md 必须按以下章节顺序组织：
 > | 登记槽位 | 落点章节 | 登记内容（占位符化） | 反向引用 |
 > | --- | --- | --- | --- |
 > | 读写非对称降级语义 | §1.4 | 每个缓存的定位（加速层 / 数据源）→ 降级方向（加速层 miss 静默穿透 / 数据源 miss 快速失败） | design-spec/05 §3.2 |
+> | 写策略 | §4.x | 每个缓存采用哪种写策略（cache-aside 失效优先 / write-through 同步写穿 / write-back 写回异步 flush）+ 触发理由 | design-spec/05 §4 写策略轴 |
 > | TTL 随机抖动 | §2.x | base TTL + 抖动比例 `{jitter-pct}` | design-spec/05 §3.3 |
 > | 值编码 | §2.x | 是否压缩 + 小值不压阈值 `{min-compress-bytes}` + value 写入上限 `{max-value-KB}` + 1 字节自描述头 | design-spec/05 §3.3 |
 > | Hash 分桶 | §2.x | 桶数 `{bucket-N}` + key/field/value 形态 | design-spec/05 §3.3 |
@@ -319,6 +320,20 @@ flush 后随机抽取 N 个 key：
       告警 + 触发完整性巡检
 ```
 
+### 9.3 §4.x 写策略登记（表示记录槽位）
+
+`§4.x` 是工程填空记录（非方法论）：每个缓存登记**采用哪种写策略**及触发理由。写策略决定"何时让缓存与数据源一致"，是 §9 Flush 机制（write-back 的落地）与 §2 写入时机（cache-aside / write-through 的落地）之上的统一选择记录。槽位**只记选了什么 + 触发**，何时该选哪种的决策树不复制，反向引用 [`design-spec/05_caching_design.md §4 写策略轴`](../design-spec/05_caching_design.md)。
+
+```markdown
+| 缓存（Key 命名空间） | 写策略 | 触发理由 |
+|---------------------|--------|---------|
+| `{ns}` | cache-aside 失效优先（改库后删缓存） | 默认（读多写少、容忍短窗陈旧） |
+| `{ns-N}` | write-through 同步写穿（同步写缓存 + 库） | 写后即读 / 一致性敏感 |
+| `{state-1}` | write-back 写回（写缓存 + delta 增量异步 flush，见 §4 / §9） | 计数热点削峰（高频写聚合，热路径 0 落库） |
+```
+
+> 决策方法（三种写策略如何按"写后即读 / 一致性敏感 / 计数热点"判定、强一致延迟双删 / 订阅 binlog 的升级）见 [`design-spec/05_caching_design.md §4 写策略轴`](../design-spec/05_caching_design.md)；write-back 削峰编排见 [`design-spec/01 §3.2`](../design-spec/01_io_design.md) + [`design-spec/04`](../design-spec/04_transaction_design.md)。
+
 ---
 
 ## 10. §5 MQ 异步落库
@@ -450,6 +465,7 @@ func LoadEntityInfo(ctx *gin.Context, entityId string) (*EntityInfoCache, bool)
 | 新增 Redis Key | §2.x 表格新增一行 + 关键 Hash 新增字段映射子节 + database_design.md §4 同步 |
 | 修改 Hash field 语义 | §2.x.y Hash 字段映射 + 受影响的 Service / 定时任务文档 |
 | 调整 TTL | §2.x 表格更新 + 受影响的限流/缓存预热说明 |
+| 调整写策略（cache-aside ↔ write-through ↔ write-back） | §4.x 写策略登记更新一行 + 同步受影响的 §2 写入时机 / §9 Flush 机制 |
 | 删除 Key | §2.x / §3（如有本地缓存）/ §4（如有脏标记）全部清理 |
 
 ---

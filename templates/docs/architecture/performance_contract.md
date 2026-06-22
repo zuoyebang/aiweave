@@ -13,6 +13,7 @@
 | 指标 | 目标值 | 测量方式 | 降级阈值 |
 |------|--------|---------|---------|
 | P99 latency | < `{P99-ms}` ms | APM span / Prometheus histogram | > `{P99-degrade-ms}` ms 告警 |
+| P999 latency | < `{P999-ms}` ms | APM span / Prometheus histogram | > `{P999-degrade-ms}` ms 告警 |
 | QPS | > `{QPS-target}` | Prometheus counter rate | < `{QPS-floor}` 告警 |
 | 内存 | < `{Memory-target}` MB RSS | `/proc/meminfo` | > `{Memory-degrade}` MB 告警 |
 | CPU | < `{CPU-target}` core | container stats | > `{CPU-degrade}` core 告警 |
@@ -62,6 +63,16 @@
 
 - slice / map 初始容量必须显式（`make([]T, 0, N)`）
 - 已知大小的 slice 必须预分配
+
+### 3.4 Go 运行时旋钮（GC / 调度 / 内存上限）
+
+| 旋钮 | 设定 | 理由 |
+|------|------|------|
+| `GOMAXPROCS` | = 容器 CPU limit（用 automaxprocs 自动对齐；禁默认=宿主核数） | 容器被 CPU 限流时 P 数远超配额 → 调度争用 + 节流抖动抬高 P99 |
+| `GOMEMLIMIT` | = 容器 mem limit × `{0.9}`（软上限，留头部给非堆） | 触顶时 GC 提前更激进，防 OOMKill；与 §3.1 单请求堆预算叠加（预算控单请求，GOMEMLIMIT 控进程总量） |
+| `GOGC` | 默认 100；高分配率热路径可调高（如 200）换更少 GC 周期 | GOGC 控频率，GOMEMLIMIT 兜上限，二者必须配对 |
+
+三旋钮的值随容器配额走，必须与 [`deployment.md §7`](deployment.md) 的 CPU / mem limit 对齐（硬规则 `R-DEPLOY-GOMAXPROCS` / `R-RUNTIME-MEMLIMIT`）。
 
 ---
 
@@ -131,6 +142,19 @@
 
 L1 的熔断器参数（K / 窗口 / 采样数）真相源在 `circuit_breaker_design.md §2`。
 
+### 6.4 自适应过载与尾延迟治理
+
+> 决策真相源在 [`design-spec/07`](../../../design-spec/07_tail_latency_design.md)（尾延迟三源 / 对冲 / 自适应限制 / load shedding / 重试预算的选型与决策树）；本节仅承载"参数与档位"的表示槽位，不复制决策树。
+
+| 维度 | 登记内容 | 引用 |
+|------|---------|------|
+| 自适应并发限制 | 算法（AIMD / 梯度式）+ min-RTT 窗口 + limit 上下界 | design-spec/07 §3.3 |
+| 对冲 / 备份请求 | 触发分位（tie-delay 如 P95）+ 对冲量上限（如 ≤5%）+ 仅幂等白名单 | [`cross_service_contract.md §3`](cross_service_contract.md) |
+| 重试预算 | 重试占比上限（如 10%）+ backoff 基数 + jitter 比例 | [`cross_service_contract.md §3`](cross_service_contract.md) |
+| 优先级 / 截止 load shedding | 优先级分层（interactive/batch/bestEffort）+ 饱和信号（队列/CPU/limit 触顶）+ 丢弃顺序 | 与 §6.3 降级联动 |
+
+**关系约束**：对冲 / 重试在下游饱和时**禁止启用**（会放大过载）——饱和判定与 §6.3 的 L1/L2/L3 降级、熔断联动；对冲量与重试量必须计入 §6.1 的下游并发 / 队列预算。
+
 ---
 
 ## 7. 性能回归测试
@@ -147,6 +171,17 @@ L1 的熔断器参数（K / 窗口 / 采样数）真相源在 `circuit_breaker_d
 - allocs/op 增长 > 10% → CI 标红
 
 framework API 见 [`docs/testing/testing_design.md §4.9`](../testing/testing_design.md)。
+
+### 7.4 生产持续 profiling
+
+§7.1-§7.2 是**离线**回归；本节补**在线**观测——没有它，"IO 是第一性瓶颈"在生产只是假设而非证据。
+
+| 维度 | 要求 |
+|------|------|
+| pprof 端点 | 暴露 `/debug/pprof/*`（heap / allocs / profile(CPU) / goroutine / mutex / block），仅内网或鉴权后可达，**禁公网裸暴露** |
+| 采集方式 | 持续采样上报（如 Pyroscope / Parca）或按需抓取；热路径 P99 回归时优先看 alloc_space 火焰图定位分配源 |
+| 运行时指标 | `go_gc_duration_seconds` / `go_memstats_*` / `go_goroutines` 接入 [`observability.md §3.3`](observability.md) |
+| 告警联动 | GC pause P99、分配速率、goroutine 数突增 → 告警阈值登记 [`observability.md §5.2`](observability.md) |
 
 ---
 

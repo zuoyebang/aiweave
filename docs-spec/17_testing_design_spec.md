@@ -345,6 +345,7 @@ API 列表**必须完整**——AI 写测试用例时只能从这里取签名。
 | **并发用例** | 方法涉及共享状态 / 锁 / channel | `b.RunParallel` 或 `RunParallel(t, N, fn)` + `go test -race` 必须通过 | [`docs-spec/20`](20_concurrency_safety_spec.md) |
 | **性能回归** | 方法在 `performance_contract.md §2` 热路径清单 | `Benchmark{Method}_Parallel` + P99 / allocs/op 比对基线 | [`docs-spec/22 §7`](22_performance_contract_spec.md) |
 | **故障注入** | 方法涉及多数据源写入 / 跨服务调用 | 对每条 `transaction_design.md §6 失败路径全景图`分支至少 1 个用例（用 §4.7 注入 API）| [`docs-spec/21 §6`](21_distributed_transaction_spec.md) |
+| **尾延迟 / 过载回归** | 接口接入对冲 / 自适应并发限制 / load shedding / 重试预算 | 对冲只在超 tie-delay 且幂等时触发；load shedding 过载时先丢低优先级 / 已超截止；重试预算封顶（占比上限）不放大；自适应并发限制随时延回退（用 §4.7 注入 + §4.9 基准 API）| [`design-spec/07 §7`](../design-spec/07_tail_latency_design.md) |
 
 **纪律**：上述类别"必须"等同于 §5.1 / §5.2 的纪律——漏写视为未交付。但只在触发条件命中时强制（简单 CRUD 不必凑齐 7 类）。
 ```

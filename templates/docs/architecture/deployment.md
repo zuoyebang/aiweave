@@ -63,10 +63,11 @@
   → 资源初始化（{DB} / {缓存} / {MQ} / 熔断器，按 infrastructure.md）  ── 失败即 fail-fast
   → 注册信号处理（SIGTERM/SIGINT → §5 优雅关闭）
   → startup 通过 → 启动常驻 goroutine（按 concurrency_safety.md §1.1 清单）
-  → readiness 置 true（此刻开始 accept 流量）
+  → 预热（可选 / 尾敏感服务强烈推荐）：连接池预拨 MinIdle 条连接 + 缓存预热  ── 避开首请求握手与缓存 miss 长尾（决策见 design-spec/07 §3.5）
+  → readiness 置 true（此刻开始 accept 流量；置 true 晚于预热）
 ```
 
-就绪铁律：readiness 置 true 必须晚于"配置就绪 + 资源初始化 + 信号注册"。
+就绪铁律：readiness 置 true 必须晚于"配置就绪 + 资源初始化 + 信号注册（+ 预热，尾敏感服务）"。
 
 ---
 
@@ -127,6 +128,8 @@
 | 副本数 | 最小 `{min-replicas}`；{有状态/选主唯一性说明} | — |
 | 水平弹性 | 触发指标 `{scale-metric}`（取自 observability.md 服务级指标） | — |
 | 内存 limit 对齐 | 与 `performance_contract.md §3` 内存预算一致 | — |
+| CPU limit ↔ `GOMAXPROCS` | `GOMAXPROCS` 对齐容器 CPU limit（automaxprocs 读 cgroup 配额）；默认=宿主核数 → 被限流时 P 数超配额 → 调度争用 + 节流抖动抬 P99 | `R-DEPLOY-GOMAXPROCS` |
+| mem limit ↔ `GOMEMLIMIT` | `GOMEMLIMIT` 设为 mem limit 的 ~90%（软上限），GC 提前回收防 OOMKill；与 `performance_contract.md §3.4` 运行时旋钮一致 | `R-RUNTIME-MEMLIMIT` |
 
 ---
 

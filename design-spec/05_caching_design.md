@@ -197,7 +197,7 @@
 | --- | --- | --- |
 | 读热点 | Cache-Aside + 失效 | 极热点判定 key → L1 进程内 + L2 Redis 多级 |
 | 回源保护 | 单飞 + 随机 TTL | 单热 key 到期悬崖 → XFetch 概率提前重算；强击穿 → 逻辑过期 / 预热 |
-| 写一致 | 失效优先（改库后删缓存） | 强一致 → 延迟双删 / 订阅 binlog |
+| 写策略 | cache-aside 失效优先（改库后删缓存） | 写后即读 / 一致性敏感 → write-through（同步写穿缓存 + 库）；写聚合削峰（计数热点）→ write-back（写缓存异步 flush 库，见 04 §3 / 01 §3.2）；强一致 → 延迟双删 / 订阅 binlog |
 | 访问方式 | 统一缓存访问层（收编编解码+熔断+降级） | —（禁止业务裸碰 Redis） |
 | 近静态小表 | Redis 缓存 | ≤1 万行 + 高频 join → 本地 SQLite 镜像 |
 | 海量小映射 | 独立 String key | 数亿条 → Hash 分桶 |
@@ -252,6 +252,8 @@
 | 批量失效逐个 Delete | bump 版本前缀换代（§3.7） |
 | 缓存 key 无 TTL / 无界增长（→ 淘汰风暴） | 每 key 有界 TTL（§3.8） |
 | 实例冷启空缓存全员同时回源（启动风暴） | 启动预热 + 就绪错峰（§3.8） |
+| 写聚合热点用同步 write-through（每写穿库，失削峰意义） | 计数 / 高频写 → write-back 写缓存异步 flush（04 §3 / 01 §3.2） |
+| 一致性敏感写仍用 cache-aside 失效（读到旧值窗口） | write-through 同步写穿，或延迟双删 |
 
 > Key 模式 / Hash 字段映射 / Flush 规则正文见 [`docs-spec/06`](../docs-spec/06_cache_design_spec.md)；跨实例聚合 / 单飞契约见 [`docs-spec/25`](../docs-spec/25_io_aggregation_spec.md)；熔断接入见 [`06`](06_resilience_design.md)。
 

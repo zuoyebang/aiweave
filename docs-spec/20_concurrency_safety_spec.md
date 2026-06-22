@@ -71,6 +71,7 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | `{ns}Cache map` | `helpers/{ns}_cache.go` | HTTP handler + `{flush-task}` | `sync.RWMutex` | 读多写少 |
 | `{batch-ch} chan {Event}` | `service/{module}/dispatcher.go` | producer goroutine + consumer pool | 内部 channel buffer={N} | 满时策略：{丢弃尾部 / 阻塞 / 回压} |
 | `{pool-name} *sql.DB` | `helpers/db.go` | 所有 goroutine | `database/sql` 内部 | MaxOpen={N}、MaxIdle={N} |
+| `{hot-counter} [N]分片` | `helpers/{ns}_counter.go` | 所有 goroutine（高频写 + 周期读求和） | 分片计数 + 缓存行对齐（无锁） | 写≫读；分片按缓存行 padding 防 false-sharing |
 ```
 
 ### 4.2 必填字段
@@ -80,7 +81,7 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | 变量/数据结构 | Go 变量名 + 类型（含容量信息，如 `map[{K}]{V}`、`chan {T}`） |
 | 所在文件 | 定义文件路径；如分散在多文件，列首要定义点 |
 | 访问方 | 谁会并发读 / 谁会并发写；用"goroutine 角色"标识（如 "HTTP handler" / "{flush-task}"）|
-| 保护机制 | `sync.Mutex` / `sync.RWMutex` / `sync.Map` / `atomic.*` / "内部 channel" / "无需保护（只读）" |
+| 保护机制 | `sync.Mutex` / `sync.RWMutex` / `sync.Map` / `atomic.*` / 分片计数（striped + 缓存行对齐）/ "内部 channel" / "无需保护（只读）" |
 | 备注 | 访问比例（读多写少 / 写多读少）、TTL、容量限制等 |
 
 ### 4.3 反例（不应该的写法）
@@ -256,6 +257,8 @@ ASCII 图，分类标注**常驻 goroutine** vs **请求级 goroutine**：
 | 向已关闭的 channel 发送 | panic | 用 select + done channel 兜底 |
 | `defer` 在 for 循环内 | 资源延迟释放至函数返回，可能 OOM | 抽子函数或显式 Close |
 | 忽略 `ctx.Done()` 的常驻 goroutine | 退出信号无法传递，goroutine 泄漏 | 必须 select case `<-ctx.Done()` |
+| 超高频计数用单点 Mutex / 单 atomic（缓存行总线风暴） | 高争用下计数吞吐塌陷 | 分片计数（striped，按 P/CPU 散列）读时求和 |
+| 分片 / 原子计数器未按缓存行对齐（false-sharing） | 相邻计数器共享 64B 缓存行，分片白拆 | 按缓存行 padding / 独占 cache line |
 ```
 
 > **机械审计**：上述每条规则对应一个 rule-id（如 `R-CONC-LOCK-IO`），grep 锚维护在 `docs/architecture/ai_dev_guide.md`。grep 命中为**信号级**（🟡 待复核），最终判定权在人工 reviewer。

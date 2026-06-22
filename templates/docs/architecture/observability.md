@@ -40,6 +40,7 @@
 
 - Go runtime（GC、goroutine、内存）—— 由 `GoCollector` 自动采集
 - 连接池状态（MySQL / Redis active / idle）—— 按需注册 `Collector`
+- 生产持续 profiling（pprof / 火焰图）与运行时指标的联动见 [`performance_contract.md §7.4`](performance_contract.md)：定位"分配 / CPU 去哪了"，闭合离线 bench 之外的在线证据
 
 ### 2.4 禁止扩展到业务数据
 
@@ -109,6 +110,7 @@
 | 错误率突增 | `5xx rate > {Error-rate-threshold}%` | 2 min | P1 |
 | 延迟劣化 | `P99 > SLA × 2` | 3 min | P1 |
 | Goroutine 泄漏 | `goroutine 数 > {Goroutine-leak-threshold}` 持续增长 | 10 min | P2 |
+| GC 停顿过高 | `GC pause P99 > {GC-pause-threshold}` 持续 | 5 min | P2 |
 
 SLA 数值的真相源在 [`performance_contract.md §1`](performance_contract.md)。
 

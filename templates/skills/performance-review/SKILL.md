@@ -21,7 +21,7 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / hot-path-only�
 读以下文件（按顺序）：
 
 1. `docs/architecture/performance_contract.md` —— §1 SLA + §2 热路径清单 + §3 内存预算 + §4 数据访问约束 + §6 背压策略 + §7 性能回归
-2. `docs/architecture/ai_dev_guide.md` §10.2 —— grep 锚 rule-id 索引（R-PERF-*）
+2. `docs/architecture/ai_dev_guide.md` §10.2 —— grep 锚 rule-id 索引（R-PERF-*）；§10.10 尾延迟 / 运行时调优类（R-TAIL-*）；§10.9 部署运行时（R-DEPLOY-GOMAXPROCS / R-RUNTIME-MEMLIMIT）
 3. `docs/circuit_breaker/circuit_breaker_design.md` §2 —— 熔断参数（避免与 22 双源真相）
 4. `docs/BUILD_STATUS.md` §11 —— 约束清单状态轨道
 
@@ -44,9 +44,11 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / hot-path-only�
 
 热路径文件适用 §3 全部 grep 锚 + §2.2 "禁止操作"列；普通路径仅适用 §3 中标 "all-paths" 的 grep 锚。
 
-## 第 4 步：7 项 grep 锚检查
+## 第 4 步：grep 锚检查（R-PERF-* 7 项 + R-DEPLOY/R-RUNTIME/R-TAIL 尾延迟 6 项 + SLO/profiling 2 项）
 
 > grep 锚定位为"信号级"非"判定级"。所有命中标 🟡 待复核；最终判定由人工 reviewer 决定。
+>
+> R-DEPLOY-GOMAXPROCS / R-RUNTIME-MEMLIMIT / R-TAIL-* 多为信号级（🟡），grep 仅给线索，判定结合 deployment.md §4/§7 + performance_contract.md §6.4 时序与幂等语义。
 
 ### 检查 R-PERF-HOT-REFLECT：热路径用反射
 
@@ -123,6 +125,81 @@ grep 模式：'time\.Sleep\(' 出现在 `go func` 或 `for` 内
   - 行末含 // aiweave:allow=R-CACHE-LARGE-KEY 注解
 ```
 
+### 检查 R-DEPLOY-GOMAXPROCS：GOMAXPROCS 未对齐容器 CPU limit
+
+```
+范围：main.go / 子命令入口 + 编排清单
+判定：编排有 cpu limit 而代码无 automaxprocs / maxprocs.Set / GOMAXPROCS 对齐（用默认宿主核数 → 节流抖动抬 P99）
+误报排除：
+  - 已用 automaxprocs（deployment.md §7）
+  - 行末含 // aiweave:allow=R-DEPLOY-GOMAXPROCS 注解
+```
+
+### 检查 R-RUNTIME-MEMLIMIT：GOMEMLIMIT 未设 / 未对齐 mem limit
+
+```
+范围：main.go / 子命令入口 + 编排清单
+判定：编排有 mem limit 但无 GOMEMLIMIT / debug.SetMemoryLimit（GC 太晚 → OOMKilled）
+误报排除：
+  - 已设软上限（~90% mem limit，deployment.md §7）
+  - 行末含 // aiweave:allow=R-RUNTIME-MEMLIMIT 注解
+```
+
+### 检查 R-TAIL-RETRY-NOBUDGET：重试无预算
+
+```
+范围：入口 / 编排 / api 调用 + 重试库使用处
+判定：retry 循环 / 库调用无全局预算 / 令牌限制（重试风暴放大级联故障）
+误报排除：
+  - 已接重试预算（≤X% + 与熔断联动，performance_contract.md §6.4）
+  - 行末含 // aiweave:allow=R-TAIL-RETRY-NOBUDGET 注解
+```
+
+### 检查 R-TAIL-RETRY-NOJITTER：backoff 无 jitter
+
+```
+范围：重试退避计算处
+grep 模式：退避计算（backoff / `<<` 指数项）无 rand 抖动项
+误报排除：
+  - 含随机抖动（rand.* 叠加退避）
+  - 行末含 // aiweave:allow=R-TAIL-RETRY-NOJITTER 注解
+```
+
+### 检查 R-TAIL-HEDGE-UNSAFE：对冲 / 重试包裹非幂等调用
+
+```
+范围：hedge / retry 入口下游
+判定：hedge / retry 入口下游为写类方法（Create / Update / Delete / Incr）→ 重复副作用
+误报排除：
+  - 调用幂等（幂等 Key / 唯一索引）
+  - 行末含 // aiweave:allow=R-TAIL-HEDGE-UNSAFE 注解
+```
+
+### 检查 R-TAIL-COLDSTART：冷启 readiness 早于预热
+
+```
+范围：启动时序 / readiness handler
+判定：readiness 置 true 早于缓存 / 连接池预热完成（流量打到冷实例 → 头部 P99 飙高）
+对照：deployment.md §4 启动就绪时序（readiness 晚于预热）
+误报排除：
+  - readiness 晚于预热
+  - 行末含 // aiweave:allow=R-TAIL-COLDSTART 注解
+```
+
+### 检查 P999 SLO 已定义？
+
+```
+判定：热路径方法所属路由在 performance_contract.md §1 仅定义 P99，未定义 P999 尾延迟目标
+未定义 → 标 🟡 待复核（尾延迟治理缺上界，建议补 §1 P999 SLO）
+```
+
+### 检查 热路径回归是否有生产 profiling(pprof) 兜底？
+
+```
+判定：git diff 触及热路径文件，但工程未暴露 /debug/pprof 持续采集（performance_contract.md §7.4 / observability.md §3.3）
+缺兜底 → 标 🟡 待复核（热路径回归无生产侧定位手段，建议接入 pprof）
+```
+
 ### 检查 §2 热路径清单完整性：新增热路径方法未登记
 
 ```
@@ -149,6 +226,11 @@ grep 模式：'time\.Sleep\(' 出现在 `go func` 或 `for` 内
 🟡 待复核 — grep 锚命中（信号级，需人工判定）
   - [R-PERF-HOT-REFLECT] {文件路径}: line {N}  → {代码片段}
   - [R-PERF-LOOP-DB-QUERY] {文件路径}: line {N}  → {代码片段}
+  - [R-TAIL-RETRY-NOJITTER] {文件路径}: line {N}  → {代码片段}
+  - [R-TAIL-HEDGE-UNSAFE] {文件路径}: line {N}  → {代码片段}
+  - [R-DEPLOY-GOMAXPROCS] {入口/编排}  → 缺 automaxprocs 对齐
+  - [R-TAIL-COLDSTART] {readiness 时序}  → readiness 早于预热
+  - [P999-SLO-UNDEF] {路由}  → §1 未定义 P999
   - ...
 
 🟢 通过 — 未命中危险模式

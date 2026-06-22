@@ -128,7 +128,9 @@
 | 内存分配预算 / 对象池 | [`performance_contract.md §3`](performance_contract.md) | 🟢 |
 | 数据访问性能约束（Redis / MySQL / 缓存命中率） | [`performance_contract.md §4`](performance_contract.md) | 🟢 |
 | 背压与容量保护 / 链路超时协调 / 降级层级 | [`performance_contract.md §6`](performance_contract.md) | 🟢 |
+| 尾延迟治理（重试预算 + jitter / 对冲幂等 / 自适应过载 / load shedding） | [`performance_contract.md §6.4`](performance_contract.md) | 🟢 |
 | 性能回归测试（基准 + P99 偏差 + allocs/op） | [`performance_contract.md §7`](performance_contract.md) + [`testing_design.md §4.9`](../testing/testing_design.md) | 🟢 |
+| 生产 profiling 兜底（`/debug/pprof` 持续采集） | [`performance_contract.md §7.4`](performance_contract.md) + [`observability.md §3.3`](observability.md) | 🟢 |
 
 ### 8.6 可观测性约束
 
@@ -205,8 +207,9 @@
 | 部署产物蓝图（镜像 / 编排 / 流水线） | [`deployment.md §1`](deployment.md) | ⬜ / 🟢 视工程启用 |
 | 容器镜像约束（多阶段 / 非 root / 最小镜像） | [`deployment.md §2`](deployment.md) | ⬜ / 🟢 视工程启用 |
 | 健康探针语义（liveness / readiness / startup 分层） | [`deployment.md §3`](deployment.md) | ⬜ / 🟢 视工程启用 |
-| 启动就绪 + 优雅关闭时序 | [`deployment.md §4`](deployment.md) + [`§5`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 启动就绪（readiness 晚于预热）+ 优雅关闭时序 | [`deployment.md §4`](deployment.md) + [`§5`](deployment.md) | ⬜ / 🟢 视工程启用 |
 | 发布回滚策略 + 资源配额弹性 | [`deployment.md §6`](deployment.md) + [`§7`](deployment.md) | ⬜ / 🟢 视工程启用 |
+| 运行时旋钮对齐容器配额（`GOMAXPROCS` / automaxprocs / `GOMEMLIMIT`） | [`deployment.md §7`](deployment.md) + [`performance_contract.md §3.4`](performance_contract.md) | ⬜ / 🟢 视工程启用 |
 
 > 运行时基线属于"AI 不直接感知"维度，启用与否由工程负责人决定（详见 INDEX.md §0 采纳进度）。
 
@@ -256,6 +259,8 @@
 | `R-CONC-SEND-CLOSED` | 向已关闭的 channel 发送 | — | 见 §10.1 备注 | 🟢 |
 | `R-RESOURCE-DEFER-LOOP` | defer 在 for 循环内 | `for [^{]*\{[\s\S]{0,300}?defer ` | 循环体内显式调用 Close | 🟢 |
 | `R-CONC-GOROUTINE-LEAK` | 忽略 ctx.Done() | `go func` 块内无 `ctx\.Done\(\)` 且无 `select` | 短周期任务（< 1s）| 🟢 |
+| `R-CONC-COUNTER-CONTENTION` | 超高频计数用单点 Mutex / 单 atomic | 热路径单一 `atomic\.Add` / `Mutex` 计数器被高频写（结合热路径判定） | 已分片计数（striped）读时求和（concurrency_safety.md §2） | 🟡 |
+| `R-CONC-FALSE-SHARING` | 分片 / 原子计数器未按缓存行对齐（false-sharing） | — 非 grep 可判（人工 / AST：相邻原子字段无 padding） | 已 padding 到 64B / 独占 cache line | 🟡 |
 
 ### 10.2 性能 / 资源类
 
@@ -338,8 +343,19 @@
 | `R-PROBE-MISSING` | 对外服务缺 readiness / liveness 端点 | 路由表无 `{live-path}` / `{ready-path}` | 纯消费者 / 任务进程（无对外 HTTP） | 🟢 |
 | `R-DEPLOY-ROOT` | 容器以 root 运行 | `{Dockerfile-path}` 无 `USER` 非 root 声明 | 已声明非 root user | 🟢 |
 | `R-DEPLOY-NO-LIMITS` | 编排清单缺 requests/limits | `{deploy-manifest-path}` 无 `requests` / `limits` | — | 🟢 |
+| `R-DEPLOY-GOMAXPROCS` | `GOMAXPROCS` 未对齐容器 CPU limit（用默认宿主核数） | 编排有 cpu limit 而代码无 `automaxprocs` / `maxprocs\.Set` / `GOMAXPROCS` 对齐 | 已用 automaxprocs（deployment.md §7） | 🟡 |
+| `R-RUNTIME-MEMLIMIT` | `GOMEMLIMIT` 未设或未对齐 mem limit | 编排有 mem limit 但无 `GOMEMLIMIT` / `debug\.SetMemoryLimit` | 已设软上限（~90% mem limit，deployment.md §7） | 🟡 |
 
-### 10.10 规则维护
+### 10.10 尾延迟 / 运行时调优类（由 `performance-review` 触发）
+
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-TAIL-RETRY-NOBUDGET` | 重试无预算（占比无上限） | retry 循环 / 库调用无全局预算 / 令牌限制 | 已接重试预算（≤X% + 熔断联动，performance_contract.md §6.4） | 🟡 |
+| `R-TAIL-RETRY-NOJITTER` | backoff 无 jitter（重试同步成群） | 退避计算（`backoff` / `<<` 指数项）无 `rand` 抖动项 | 含随机抖动 | 🟡 |
+| `R-TAIL-HEDGE-UNSAFE` | 对冲 / 重试包裹非幂等调用 | hedge / retry 入口下游为写类方法（`Create` / `Update` / `Delete` / `Incr`） | 调用幂等（幂等 Key / 唯一索引） | 🟡 |
+| `R-TAIL-COLDSTART` | 冷启 readiness 早于预热（缓存 / 连接池） | readiness 置 true 早于缓存 / 连接池预热完成（结合 deployment.md §4 时序） | readiness 晚于预热 | 🟡 |
+
+### 10.11 规则维护
 
 - 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）

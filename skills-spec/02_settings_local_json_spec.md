@@ -103,6 +103,8 @@
 
 > 脚本应放工程 `scripts/hooks/` 下，纯标准工具（grep / shell），不引入业务耦合。退出码约定：`0` 放行；非 `0` 在 PreToolUse 下阻断、在 PostToolUse/Stop 下告警。
 
+> 此外，[`design-spec/07 §6.2`](../design-spec/07_tail_latency_design.md)（机械闸门下沉 L0）把三条可机械判定的尾延迟 / 运行时违规也下沉为编辑 `.go` 时的 grep 信号——`R-TAIL-RETRY-NOJITTER`（重试退避无 jitter）、`R-TAIL-HEDGE-UNSAFE`（对冲 / 重试包裹非幂等调用）、`R-DEPLOY-GOMAXPROCS`（部署无 GOMAXPROCS 对齐）。它们与族 A 同样是"编辑后机械跑 grep 锚"的形态，挂在族 A 的 PostToolUse 上作为附加 L0 信号（见 §4.1 末），不另立强制族；"预算是否合理 / 优先级是否分层"等语义类违规走选型审查（软提醒）。
+
 ### 4.1 Hook 族 A — IO 铁律检查（强制）
 
 PostToolUse 在每次编辑 / 写入 `.go` 后，对改动文件机械跑 IO 铁律 grep 锚（与 [`docs-spec/25 §2`](../docs-spec/25_io_aggregation_spec.md) / `/io-review` 同源）：
@@ -131,6 +133,15 @@ PostToolUse 在每次编辑 / 写入 `.go` 后，对改动文件机械跑 IO 铁
 ```
 
 > 升级阻断：对高纪律团队，可把铁律一（N+1）命中改为 PreToolUse + `exit 1` 直接拦截写入，强制先改批量。
+
+附加 L0 grep 信号（下沉自 [`design-spec/07 §6.2`](../design-spec/07_tail_latency_design.md)，同样跑在编辑 `.go` 的 PostToolUse 上，可与 `io_iron_law_check.sh` 合并或并列一个 `tail_runtime_check.sh`）：
+
+```
+5. grep R-TAIL-RETRY-NOJITTER 模式（重试 backoff 拼装缺随机项：sleep = base × 2^attempt 无 + rand/jitter）
+6. grep R-TAIL-HEDGE-UNSAFE 模式（写类方法名 —— Create/Update/Delete/Incr 等 —— 进对冲 / 重试入口，污点非幂等）
+7. grep R-DEPLOY-GOMAXPROCS 模式（main / 编排清单缺 automaxprocs / GOMAXPROCS 对齐 cgroup CPU 配额）
+8. 命中且无行末 // aiweave:allow=R-TAIL-* / =R-DEPLOY-GOMAXPROCS 注解 → 打印 🟡 告警（文件:行 + rule-id + "决策见 design-spec/07 §6"）；其中 R-TAIL-HEDGE-UNSAFE（非幂等上对冲）属硬违规，高纪律团队可升级为 PreToolUse + exit 1 拦截
+```
 
 ### 4.2 Hook 族 B — 代码↔文档双向同步（强制）
 

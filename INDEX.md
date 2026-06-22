@@ -4,7 +4,7 @@
 
 > 落地工程把本表复制到 `docs/INDEX.md §0`，按工程实际启用情况标记每个规范的状态。
 >
-> AIWeave 骨架本身的所有 28 篇 docs-spec + 7 篇 design-spec + 19 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
+> AIWeave 骨架本身的所有 28 篇 docs-spec + 8 篇 design-spec + 19 个 Skill 都已就位；具体哪些规范在某个工程内强制生效，由该工程自行决定。本表是工程级开关。
 
 ### 0.1 规范启用状态
 
@@ -19,7 +19,7 @@
 | `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（三条 IO 铁律） |
 | `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
 | `docs-spec/27_deployment_runtime` 部署与运行时生命周期 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（容器化部署 / 优雅启停 / 探针） |
-| `design-spec/*` 高性能架构方法论（六视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
+| `design-spec/*` 高性能架构方法论（七视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
 | Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
@@ -86,17 +86,18 @@
 
 ## design-spec/ —— 高性能架构方法论（技术方案生成参考）
 
-编号 00-06，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。
+编号 00-07，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。
 
 | 序号 | 规范 | 决策落到 docs/ | 表示真相源 | 说明 |
 |------|------|---------------|-----------|------|
-| 00 | [design-spec/00_design_overview.md](design-spec/00_design_overview.md) | — | — | 设计方法论总纲：第三支柱定位 / 六视角清单 / 统一 lens 九节骨架 / 双源真相边界 / 技术方案(TRD)产物结构 / 占位符纪律继承 |
+| 00 | [design-spec/00_design_overview.md](design-spec/00_design_overview.md) | — | — | 设计方法论总纲：第三支柱定位 / 七视角清单 / 统一 lens 九节骨架 / 双源真相边界 / 技术方案(TRD)产物结构 / 占位符纪律继承 |
 | 01 | [design-spec/01_io_design.md](design-spec/01_io_design.md) ⭐ | architecture/io_contract.md | [docs-spec/25](docs-spec/25_io_aggregation_spec.md) | **旗舰范本（写透）**：IO 三维度（次数/串并行/往返）+ 读写路径分治 + 读/写两棵决策树 + 三句话默认（批量/并行/单次往返优先）+ 借纪律不借实现（按数据形态重选原语）+ 编排权衡矩阵 + 截止预算逐跳传播 + 扇出失败语义（all-or-nothing vs best-effort）+ 跨请求微批 + 反模式速查（R-IO-*）+ 机械闸门。硬规则（三条铁律 / 聚合器）引用 25 不复制 |
 | 02 | [design-spec/02_data_model_design.md](design-spec/02_data_model_design.md) | schema/database_design.md | [docs-spec/05](docs-spec/05_schema_design_spec.md) | 数据建模决策（写透）：数据访问层范式（私有纯查询+公有缓存编排+成对批量）/ 分库分表决策树（业务域+量级+读写模式 / 逻辑物理表名解耦）/ shard 分组并行 / 批量三段式 / 组装层 map 入参纪律 / 分页（keyset 游标 / 大结果集流式） |
 | 03 | [design-spec/03_concurrency_design.md](design-spec/03_concurrency_design.md) | architecture/concurrency_safety.md | [docs-spec/20](docs-spec/20_concurrency_safety_spec.md) | 并发模型决策（写透）：并发原语选型 / **协程池容量定量（Little 定律，远大于核数）** / 阻塞不变量 / 内联兜底提交器 |
 | 04 | [design-spec/04_transaction_design.md](design-spec/04_transaction_design.md) | service/transaction_design.md | [docs-spec/21](docs-spec/21_distributed_transaction_spec.md) | 事务一致性决策（写透）：一致性强度判定 / 本地 vs 分布式 / **弱一致+边界兜底+监控取舍** / 读写分离消除幂等复杂度 |
 | 05 | [design-spec/05_caching_design.md](design-spec/05_caching_design.md) | cache/cache_design.md | [docs-spec/06](docs-spec/06_cache_design_spec.md) | 缓存策略决策（写透）：统一访问层 / **读写非对称降级（加速层 vs 数据源）** / 多级缓存 / 值编码 / Hash 分桶 / 本地 SQLite 镜像 / 确定性加密 ID / 穿透防护（空值+布隆）/ 序列化格式选型 / 世代式失效（杜绝 KEYS）/ 键生命周期+冷启预热 |
 | 06 | [design-spec/06_resilience_design.md](design-spec/06_resilience_design.md) | circuit_breaker/ + architecture/performance_contract.md | [docs-spec/12](docs-spec/12_circuit_breaker_spec.md) / [22](docs-spec/22_performance_contract_spec.md) | 稳定性决策（写透）：**自适应熔断（SRE 概率丢弃 > 二态）** / 零侵入接入 / 连接池基线 / 分层与数据层禁日志 / 危险开关双门禁 |
+| 07 | [design-spec/07_tail_latency_design.md](design-spec/07_tail_latency_design.md) 🆕 | architecture/performance_contract.md + cross_service_contract.md | [docs-spec/22](docs-spec/22_performance_contract_spec.md) / [24](docs-spec/24_cross_service_contract_spec.md) / [12](docs-spec/12_circuit_breaker_spec.md) | 尾延迟与自适应过载决策（写透）：尾延迟三源识别 / **对冲·备份请求** / 静态池→**自适应并发限制** / **优先级·截止感知 load shedding** / 重试预算 / 冷启预热。压 P99·P999 长尾与过载有序降级（与 06 扛故障互补，见 07 §8 边界） |
 
 ## skills-spec/ —— `.claude/skills/` 的规范
 
@@ -128,7 +129,7 @@
 | new-saga-step | [templates/skills/new-saga-step/SKILL.md](templates/skills/new-saga-step/SKILL.md) — 生成 Saga 步骤代码 + 补偿 + 幂等 Key |
 | domain-invariant-check | [templates/skills/domain-invariant-check/SKILL.md](templates/skills/domain-invariant-check/SKILL.md) — 审计代码 ↔ 领域不变量约束一致性 |
 | failure-path-review | [templates/skills/failure-path-review/SKILL.md](templates/skills/failure-path-review/SKILL.md) — 审计失败路径文档 / 测试覆盖完整性 |
-| design-solution | [templates/skills/design-solution/SKILL.md](templates/skills/design-solution/SKILL.md) — **设计类（A0 上游）**：输入需求 → 过 design-spec 六视角 → 产出技术方案(TRD)，衔接 A1 forward / B1 sync |
+| design-solution | [templates/skills/design-solution/SKILL.md](templates/skills/design-solution/SKILL.md) — **设计类（A0 上游）**：输入需求 → 过 design-spec 七视角 → 产出技术方案(TRD)，衔接 A1 forward / B1 sync |
 
 ## templates/ —— 可直接复制的骨架
 

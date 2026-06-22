@@ -114,6 +114,10 @@ func TruncateAll(t *testing.T)
 ### 5.4 覆盖率目标
 - controller ≥ 70% / service ≥ 80%
 
+### 5.5 高级用例类别（触发才强制）
+- 并发（共享状态 / 锁 / channel，`-race`）/ 性能回归（热路径，P99 比对）/ 故障注入（多数据源 / 跨服务）
+- 尾延迟 / 过载回归（接入对冲 / 自适应限制 / load shedding / 重试预算）：对冲只在超 tie-delay 且幂等时触发；过载先丢低优先级 / 已超截止；重试预算封顶不放大；自适应限制随时延回退（决策见 `aiweave/design-spec/07 §7`）
+
 ## 6. 与 Stage 的协同
 
 | Stage | 业务代码 | 测试 |

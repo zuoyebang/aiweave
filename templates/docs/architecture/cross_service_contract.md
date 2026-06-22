@@ -51,6 +51,13 @@
 
 **超时关系约束**：本服务对每个下游设置的超时 `{T-self-set-ms}` 必须满足 [`performance_contract.md §6.2`](performance_contract.md) 链路超时协调表。
 
+**约束**：
+
+- **剩余截止传播**：下游调用应传"端到端剩余预算"而非各自固定超时（剩余预算 < 本跳成本 → fast-fail / 跳过，决策见 design-spec/01 §3.3）
+- **重试预算 + 对冲**（尾延迟治理，决策见 [`design-spec/07`](../../../design-spec/07_tail_latency_design.md)，参数登记 [`performance_contract.md §6.4`](performance_contract.md)）：
+  - 重试只对**幂等**下游；全局重试占比设上限（如 ≤10%）+ backoff + jitter，防重试风暴放大故障（§4 原则 2"不可放大"）
+  - 对冲 / 备份请求仅对**幂等 + 下游有余量**的尾敏感调用启用；触发分位（如 P95）+ 对冲量上限（如 ≤5%）；**下游饱和时禁用**（会翻倍打）
+
 ---
 
 ## 4. 故障传播矩阵

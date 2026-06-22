@@ -32,7 +32,7 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / 指定 service
 - 文件路径：直接以该路径为范围
 - service 模块：`service/{module}/**/*.go`
 
-## 第 3 步：8 项 grep 锚检查
+## 第 3 步：10 项 grep 锚检查
 
 > grep 锚定位为"信号级"非"判定级"。所有命中标 🟡 待复核；最终判定由人工 reviewer 决定是否阻断合并。
 
@@ -100,6 +100,25 @@ grep 模式：'for [^{]*\{[\s\S]{0,300}?defer '
   - 行末含 // aiweave:allow=R-CONC-GOROUTINE-LEAK 注解
 ```
 
+### 检查 R-CONC-COUNTER-CONTENTION：超高频计数单点争用
+
+```
+判定：热路径单一 atomic.Add / Mutex 计数器被高频写（单点 Mutex / 单 atomic 计数）
+误报排除：
+  - 已分片计数（striped）读时求和（concurrency_safety.md §2）
+  - 非热路径 / 低频计数
+  - 行末含 // aiweave:allow=R-CONC-COUNTER-CONTENTION 注解
+```
+
+### 检查 R-CONC-FALSE-SHARING：分片计数未对齐缓存行
+
+```
+判定：分片 / 原子计数器相邻字段未按缓存行对齐（false-sharing，分片白拆）—— 非 grep 可判（人工 / AST）
+误报排除：
+  - 已 padding 到 64B / 独占 cache line
+  - 行末含 // aiweave:allow=R-CONC-FALSE-SHARING 注解
+```
+
 ### 检查 §2 注册表完整性：新增共享状态未登记
 
 ```
@@ -119,6 +138,8 @@ grep 模式：'for [^{]*\{[\s\S]{0,300}?defer '
 🟡 待复核 — grep 锚命中（信号级，需人工判定）
   - [R-CONC-LOCK-IO] {文件路径}: line {N}  → {代码片段}
   - [R-RESOURCE-DEFER-LOOP] {文件路径}: line {N}  → {代码片段}
+  - [R-CONC-COUNTER-CONTENTION] {文件路径}: line {N}  → {代码片段}
+  - [R-CONC-FALSE-SHARING] {文件路径}: {结构体}  → 分片字段无 padding（人工/AST 判定）
   - ...
 
 🟢 通过 — 未命中危险模式
