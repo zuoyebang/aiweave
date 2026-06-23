@@ -286,6 +286,18 @@ base.RenderJsonSucc(ctx, result)
 3. 在受影响的 service / api 文档同步引用
 ```
 
+### 9.5 对外 ID / token 解密失败的错误码纪律（强制 / 安全）
+
+> §7 错误码新增规范的一条**安全特例**，写入 `status_codes.md` 错误码新增规范一节（骨架 §6.5）。
+
+对外暴露的主键 / ID 走确定性加密（决策见 [`design-spec/05 §9.5`](../design-spec/05_caching_design.md)、登记见 [`05 §6.6`](05_schema_design_spec.md)）。其**入参侧解密失败的错误处理**有一条反预言机硬纪律：
+
+- **禁止**为"token 非法 / 解密失败 / 解密后格式不对"新增任何专用错误码（如 `ErrInvalidKeyNo`）。
+- 一律**统一降级为"查无结果"**（与"真无数据"返回完全相同的 status / message），响应**不得**携带任何"解密失败"细节。
+- 理由：响应差分（哪些 token 有效 / 哪些伪造）会让加密层退化为**预言机**，攻击者可批量探测有效 token 空间。统一"查无结果"把信号噪声化。
+
+> grep 锚 `R-SEC-DECRYPT-ORACLE`（解密失败给差异化错误 / 4xx / 携带失败细节）、`R-SEC-ID-PLAINTEXT`（响应直接返回未加密真实主键）；完整定义见 `ai_dev_guide.md §10.11`。本节是**表示纪律**——确定性加密算法（PKCS7 / AES-CBC / 确定性 IV / KDF 隔离 / 版本前缀轮换）真相源在 design-spec/05 §9.5，不复制。
+
 ---
 
 ## 10. 与其他文档的关系

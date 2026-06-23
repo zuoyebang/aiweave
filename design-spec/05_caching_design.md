@@ -311,7 +311,7 @@ bucket = crc32.ChecksumIEEE([]byte(field)) % 16_000_000   // 1600 万桶，field
 key="cname_"+bucket; field=名称; value={"1":"id1",...}（一名多 id 上限 32，id 存十进制串规避 2^53 丢精度）
 ```
 
-### 9.4 本地 SQL 缓存（进程内 SQLite 镜像）
+### 9.4 本地 SQL 缓存（进程内 SQLite 镜像 · 可复用组件蓝图）
 
 近静态小表整表镜像，远端往返(~1-3ms)→本地索引查找(~1-50µs，100-1000×)。关键细节：
 - 纯 Go 驱动（`modernc.org/sqlite`）保 `CGO_ENABLED=0`；WAL 单写多读（读池长存保温、**写池 `MaxOpenConns=1`** 钳并发，详见 [`03 §9.4`](03_concurrency_design.md)）。
@@ -319,12 +319,25 @@ key="cname_"+bucket; field=名称; value={"1":"id1",...}（一名多 id 上限 3
 - 单后台协程每 24h 顺序刷新全部表，每 7 次顺带 `VACUUM`；本地命中绕过 Redis（双写产生两份陈旧度）。
 - 三层 fail-open：本地（就绪）> Redis > MySQL，每层故障安全跌落下一层。
 
+**组件骨架（按职责拆 6 件，整体可迁移）**——把"本地镜像"沉淀成可复用组件而非一次性代码：
+
+| 部件 | 职责 |
+| --- | --- |
+| registry | 每表注册项（源库句柄 / 模型 / 索引 / 首行超时）+ `ready` 原子位；注册集中一处可见 |
+| engine | 单 SQLite 文件：`readDB`（多连接）/ `writeDB`（单连接）+ 建库 PRAGMA（WAL / cache_size / mmap）+ AutoMigrate 建表 |
+| loader | 整表流式拉取（首行到达超时则跳过本表、走远端）→ 单事务原子替换写本地 |
+| refresher | **唯一后台协程**：首次顺序加载 → 每统一间隔刷新全部表 → 每 N 次刷新顺带 VACUUM |
+| maintainer | `compact()`：VACUUM + `wal_checkpoint(TRUNCATE)`，由 refresher 调用（非独立协程） |
+| api | `DB(name)→(*handle, ready)` 路由契约：未就绪 / 未注册 / 开关关 → 回落远端 |
+
+**原子发布不变量（本组件最该守的一条）**：`ready` **只能在整表替换事务 COMMIT 成功后**置位。读者只读 `ready`，WAL 下读事务一开始即钉住"最末一条已提交帧"快照；由 `COMMIT happens-before ready.Store(true) happens-before 读者读到 true happens-before 读者开读事务`，读者要么走远端 / 读到**完整旧版本**、要么读到**完整新版本**——**绝无半截、绝无"已切本地却读空"**。违反（COMMIT 前置位 / 跨刷新持长读事务不重开）即撕裂可见性 → `R-LOCALMIRROR-STALE-READY`。
+
 ### 9.5 确定性加密对外 ID
 
 ```
 plain → PKCS7 → AES-128-CBC(IV = HMAC-SHA256(ivKey, plain)[:16]) → base64url → "A"+密文
 ```
-确定性 IV（同明文→同密文）→ 客户端可当稳定键持久化、测试可 Decrypt 反验；`ivKey=HMAC(masterKey,"...-iv-v1")` 隔离子密钥；版本前缀预留轮换；空/零值短路返 `""`。**解密失败统一降级为"查无结果"（返 201/空），绝不返 4xx、绝不携带失败细节**——否则响应差分让加密层退化为预言机，可被批量探测有效 token。
+确定性 IV（同明文→同密文）→ 客户端可当稳定键持久化、测试可 Decrypt 反验；`ivKey=HMAC(masterKey,"...-iv-v1")` 隔离子密钥；版本前缀预留轮换；空/零值短路返 `""`。**解密失败统一降级为"查无结果"（返 201/空），绝不返 4xx、绝不携带失败细节**——否则响应差分让加密层退化为预言机，可被批量探测有效 token（机械闸门 `R-SEC-ID-PLAINTEXT` / `R-SEC-DECRYPT-ORACLE`，表示纪律见 [`docs-spec/14 §9.5`](../docs-spec/14_status_codes_spec.md)）。
 
 ### 9.6 XFetch 概率提前重算（防单热 key 击穿）
 

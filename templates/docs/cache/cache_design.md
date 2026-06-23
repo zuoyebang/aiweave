@@ -207,7 +207,9 @@ WAL 单写多读连接池（嵌入式库进程内 CPU-bound 访问，按核数�
 
 三层 fail-open（每层故障安全跌落下一层）：本地（就绪）> Redis > 数据源。
 
-> 决策方法（何时该本地镜像、整表原子替换语义）见 [design-spec/05_caching_design.md §3.1](../../../design-spec/05_caching_design.md)；WAL 读写池定容与串行写的并发细节见 [design-spec/03_concurrency_design.md §9.4](../../../design-spec/03_concurrency_design.md)。
+**原子发布不变量（强制）**：`ready` 标志**只能在整表替换事务 COMMIT 成功后**置位；读者只读 `ready`，WAL 读事务开始即钉住最末已提交帧快照 → 要么走远端 / 读完整旧版本、要么读完整新版本，**绝无半截**。COMMIT 前置位 / 跨刷新持长读事务即撕裂可见性（`R-LOCALMIRROR-STALE-READY`）。
+
+> 决策方法（何时该本地镜像、整表原子替换语义、组件骨架与原子发布不变量）见 [design-spec/05_caching_design.md §3.1 / §9.4](../../../design-spec/05_caching_design.md)；WAL 读写池定容与串行写的并发细节见 [design-spec/03_concurrency_design.md §9.4](../../../design-spec/03_concurrency_design.md)。
 
 ### 3.5 本地缓存准入条件 + 排除清单登记
 

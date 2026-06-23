@@ -1,6 +1,6 @@
 ---
 name: doc-sync-check
-description: 检查 docs/ 文档与代码的一致性，发现缺失文档、过期文档和未登记的文档。同时审计 aiweave 规范本体是否含业务名泄漏（PRINCIPLES §12），并机械扫描配置安全（R-CONF-*）与部署/运行时生命周期（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）危险锚。用于定期审计文档质量。
+description: 检查 docs/ 文档与代码的一致性，发现缺失文档、过期文档和未登记的文档。同时审计 aiweave 规范本体是否含业务名泄漏（PRINCIPLES §12），并机械扫描配置安全（R-CONF-*）与部署/运行时生命周期（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）、数据对外暴露（R-SEC-*）危险锚。用于定期审计文档质量。
 disable-model-invocation: true
 argument-hint: "[scope] 可选：api / service / schema / architecture / cache / aiweave / all"
 ---
@@ -99,9 +99,9 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
    - d. AIWeave 规范本体引用 template 文件实名（如 `templates/docs/architecture/auth_flow.md`）不算泄漏，但应注明"template 文件实际名为 X，落地按业务重命名"
    - e. 行末含 `<!-- aiweave:allow=domain-leak reason=... -->` 注解时跳过。每文件豁免不超过 3 处，超出 → 标 🟡 中度（建议结构调整）。
 
-**维度 9：配置安全 + 部署/运行时危险锚（仅当对应规范启用时）**
+**维度 9：配置安全 + 部署/运行时 + 数据对外暴露危险锚（仅当对应规范启用时）**
 
-> 折叠审计：参照 26 把 `R-CONF-*` 折叠进本 Skill 的模式，27 的部署/运行时锚同样在此机械扫描，不另设审计 Skill。锚定义见 [`ai_dev_guide.md §10.8`](../../../templates/docs/architecture/ai_dev_guide.md)（R-CONF-*）/ §10.9（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）。grep 锚为信号级，命中标 🟡 待复核。
+> 折叠审计：参照 26 把 `R-CONF-*` 折叠进本 Skill 的模式，27 的部署/运行时锚同样在此机械扫描，不另设审计 Skill。锚定义见 [`ai_dev_guide.md §10.8`](../../../templates/docs/architecture/ai_dev_guide.md)（R-CONF-*）/ §10.9（R-SHUTDOWN-* / R-PROBE-* / R-DEPLOY-*）/ §10.11（R-SEC-*）。grep 锚为信号级，命中标 🟡 待复核。
 
 - **配置安全（如启用 26）**：扫描配置文件 / 代码中的明文凭据、硬编码密钥、拉取未 fail-fast（`R-CONF-PLAINTEXT-CRED` / `R-CONF-HARDCODE-SECRET` / `R-CONF-SECRET-COMMIT` / `R-CONF-NO-FAILFAST`）
 - **部署/运行时（如启用 27）**：
@@ -109,6 +109,7 @@ argument-hint: "[scope] 可选：api / service / schema / architecture / cache /
   - 与 `concurrency_safety.md §1.1` 常驻 goroutine 清单对账，未接入关闭排空 → `R-SHUTDOWN-LEAK-GOROUTINE`（与 `/concurrency-review` 交叉复核）
   - liveness 探针 handler 内含依赖检查（`.Ping(` / 下游调用）→ `R-PROBE-LIVENESS-DEEP`；对外服务缺探针端点 → `R-PROBE-MISSING`
   - 镜像定义缺非 root 声明 → `R-DEPLOY-ROOT`；编排清单缺 requests/limits → `R-DEPLOY-NO-LIMITS`
+- **数据对外暴露 / 加密（如启用对外 ID 加密）**：assembler / 出口渲染直接返回未加密真实主键 / 内部 ID → `R-SEC-ID-PLAINTEXT`；对外 ID 解密失败返差异化错误 / 4xx / 携带失败细节（而非统一"查无结果"）→ `R-SEC-DECRYPT-ORACLE`（核对 `status_codes.md §6.5` / docs-spec/14 §9.5）
 - 命中且未豁免（行末 `// aiweave:allow=<rule-id>`）→ 列入 🟡 待复核，核对 `deployment.md` §3/§5 与代码一致
 
 ## 第 3 步：输出格式

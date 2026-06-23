@@ -46,7 +46,7 @@ cache_design.md 必须按以下章节顺序组织：
 > | 回源保护三类分治 | §2.x | 逐 Key 登记武器（single-flight / TTL 抖动 / XFetch）+ XFetch `{delta}` / `{beta}` | design-spec/05 §3.4 |
 > | 紧凑编码阈值 | §2.x | 各集合类型 `listpack/intset/ziplist` 阈值（元素数 `{max-entries}` / 值长 `{max-value-len}`） | design-spec/05 §3.5 |
 > | 概率/位图结构 | §2.x | 哪些"计数/存在/集合"需求用 HyperLogLog / Bitmap / Roaring | design-spec/05 §3.5 |
-> | 本地缓存镜像 | §3.x | 镜像表清单 + WAL 读池 `min(max(2×NumCPU,16),64)` / 写池 `MaxOpenConns=1` + 三层 fail-open | design-spec/05 §3.1（并发细节指 design-spec/03 §9.4） |
+> | 本地缓存镜像 | §3.x | 镜像表清单 + WAL 读池 `min(max(2×NumCPU,16),64)` / 写池 `MaxOpenConns=1` + 三层 fail-open + **原子发布不变量（`ready` 仅 COMMIT 后置位）** | design-spec/05 §3.1 / §9.4（并发细节指 design-spec/03 §9.4） |
 > | 本地缓存准入 + 排除清单 | §3.x | L1 进程内 KV 六条准入（有界小 / 低变更 / 容忍陈旧 / 高频读 / 非强一致 / 低基数）+ 排除清单（高基数 / 高频变更 / 强一致 / 大对象） | design-spec/05 §3.1 |
 > | 写路径削峰 | §4.x | 哪些高频写走 Redis-first + delta 增量 flush（周期 `{flush-interval}`） | design-spec/01 §3.2 + design-spec/04 |
 > | 分片可扩展 | §9 | 大 key 治理（识别 `{big-value}` / 拆分 / `UNLINK` / 检测）+ 热 key 治理（读热 L1/读副本/`{hotkey}:{0..K}` 打散；写热 本地聚合 flush/分片计数）+ 多分片（Cluster/一致性哈希 / Hash Tag 纪律 / 按分片分组并行 / 禁 `mod N`） | design-spec/05 §3.6 |

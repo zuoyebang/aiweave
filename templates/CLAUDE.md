@@ -411,6 +411,9 @@ md 与代码冲突时按规则 7 处理。
 | **冷启 readiness 早于预热（缓存 / 连接池）** | 流量打到冷实例，头部 P99 飙高 | readiness 晚于预热 | `R-TAIL-COLDSTART` |
 | **超高频计数用单点 Mutex / 单 atomic** | 缓存行总线风暴，计数吞吐塌陷 | 分片计数（striped）读时求和 | `R-CONC-COUNTER-CONTENTION` |
 | **分片 / 原子计数器未按缓存行对齐** | false-sharing，分片白拆 | padding 到 64B / 独占 cache line | `R-CONC-FALSE-SHARING` |
+| **响应直接返回未加密的真实主键 / 内部 ID** | 内部 ID 空间暴露 → 被顺序枚举刷库 | 出口确定性加密（design-spec/05 §9.5） | `R-SEC-ID-PLAINTEXT` |
+| **对外 ID 解密失败返差异化错误 / 4xx / 携带失败细节** | 响应差分 → 加密层退化为预言机，可批量探测有效 token | 统一"查无结果"无差分（status_codes §7.5） | `R-SEC-DECRYPT-ORACLE` |
+| **本地镜像 `ready` 在事务 COMMIT 前置位 / 跨刷新持长读事务** | 撕裂可见性：读到半截 / 已切本地却读空 | `ready` 仅 COMMIT 后置位 + 短 auto-commit 读（design-spec/05 §9.4） | `R-LOCALMIRROR-STALE-READY` |
 
 ### 范围判定表
 
@@ -467,6 +470,8 @@ md 与代码冲突时按规则 7 处理。
 | **入口 / 编排新增对冲 / 重试预算 / 自适应并发限制 / load shedding** | `docs/architecture/performance_contract.md` §6.4 自适应过载 + `cross_service_contract.md` §3（决策见 design-spec/07） |
 | **新增分片计数 / striped counter / 缓存行对齐 padding** | `docs/architecture/concurrency_safety.md` §2 共享状态注册表（决策见 design-spec/03 §3.5） |
 | **新增 `/debug/pprof` 暴露 / 持续 profiling 采集** | `docs/architecture/performance_contract.md` §7.4 生产 profiling + `observability.md` §3.3 |
+| **assembler / 出口渲染新增主键·ID 字段 / `keycrypto.Encrypt`·`Decrypt`** | `docs/architecture/status_codes.md` §6.5（解密失败统一查无结果）+ `docs/schema/database_design.md` §6.6 对外 ID 形态（决策见 design-spec/05 §9.5） |
+| **`helpers/localsqlcache/` 本地 SQL 镜像 / 镜像表注册 / 刷新协程** | `docs/cache/cache_design.md` §3.4 本地缓存镜像登记（决策见 design-spec/05 §9.4 + 03 §9.4） |
 
 ### 输出格式
 

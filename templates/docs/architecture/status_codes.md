@@ -64,6 +64,10 @@
 
 （按 docs-spec/14 §9）
 
+### 6.5 对外 ID / token 解密失败（安全 / 强制）
+
+> 对外主键走确定性加密（决策 design-spec/05 §9.5）。入参侧解密失败**禁止新增专用错误码**，一律统一返回"查无结果"（与真无数据同 status / message），不得携带失败细节——否则响应差分让加密层退化为预言机。grep 锚 `R-SEC-DECRYPT-ORACLE` / `R-SEC-ID-PLAINTEXT`（详见 docs-spec/14 §9.5、ai_dev_guide §10.11）。
+
 
 ---
 

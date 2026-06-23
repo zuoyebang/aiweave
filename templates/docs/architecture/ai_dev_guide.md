@@ -277,6 +277,7 @@
 | `R-CACHE-HOTKEY-SINGLE-SHARD` | 热 key 流量全砸单分片（加分片分不走） | 选型 / 人工审查：单 key 超高频无打散 | L1 / 读副本 / `{hotkey}:{i}` 打散 / 分片计数（cache_design §9.2） | 🟡 |
 | `R-CACHE-L1-HIGH-CARD` | 高基数 / 高频变更 key 塞进 L1 进程内 | L1 写入 key 为 per-entity / 组合键 / 计数类 | 满足 L1 准入（万级 + 低频变更，cache_design §3.5） | 🟡 |
 | `R-CACHE-MOD-N-REHASH` | 分片节点选择用裸 `mod N`（扩缩容全量重哈希） | `%\s*len\(.*[Nn]ode` / `%\s*nodeCount` 用于节点选择 | 一致性哈希 / Cluster slot 迁移（cache_design §9.3） | 🟢 |
+| `R-LOCALMIRROR-STALE-READY` | 本地镜像 `ready` 在事务 COMMIT 前置位 / 跨刷新持长读事务（撕裂可见性） | `ready.Store(true)` / 置位早于 `Commit()` 返回；或读事务跨多轮刷新不重开 | `ready` 仅 COMMIT 后置位 + 短 auto-commit 读（cache_design §3.4） | 🟡 |
 
 ### 10.3 事务 / 幂等类
 
@@ -355,7 +356,14 @@
 | `R-TAIL-HEDGE-UNSAFE` | 对冲 / 重试包裹非幂等调用 | hedge / retry 入口下游为写类方法（`Create` / `Update` / `Delete` / `Incr`） | 调用幂等（幂等 Key / 唯一索引） | 🟡 |
 | `R-TAIL-COLDSTART` | 冷启 readiness 早于预热（缓存 / 连接池） | readiness 置 true 早于缓存 / 连接池预热完成（结合 deployment.md §4 时序） | readiness 晚于预热 | 🟡 |
 
-### 10.11 规则维护
+### 10.11 数据对外暴露 / 加密类（由 `doc-sync-check` 触发）
+
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-SEC-ID-PLAINTEXT` | 响应直接返回未加密的真实主键 / 内部 ID | 出口 / assembler 把 `Id` / `KeyNo` / 主键字段直接赋值返回、未经 `Encrypt` | 已确定性加密（`keycrypto.Encrypt`）/ 非 ID 字段 | 🟡 |
+| `R-SEC-DECRYPT-ORACLE` | 对外 ID 解密失败返差异化错误 / 4xx / 携带失败细节（响应差分预言机） | 解密失败分支返回专用错误码 / 4xx / "解密失败"文案，而非统一"查无结果" | 统一返回查无结果（status_codes §6.5 / docs-spec/14 §9.5） | 🟡 |
+
+### 10.12 规则维护
 
 - 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）

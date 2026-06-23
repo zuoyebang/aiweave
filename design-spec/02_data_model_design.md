@@ -164,7 +164,7 @@ DB 模型 → API 响应的组装：
 | `SELECT *` / 取多余列 → 走不了覆盖索引 + 多余载荷 | 只取所需列，高频查询走覆盖索引（index-only scan） |
 | 过度索引（每个二级索引都是写放大 + 空间） | 按查询路径建索引，定期审无用索引 |
 | select 判有无再分别 insert/update | 批量 Upsert（`ON DUPLICATE KEY`/`ON CONFLICT`） |
-| 对外暴露真实主键 | 加密 ID（05 §确定性加密），真实 PK 仅内部用 |
+| 对外暴露真实主键 | 加密 ID（[`05 §9.5`](05_caching_design.md) 确定性加密对外 ID），真实 PK 仅内部用 |
 | 深分页用 `LIMIT {大 offset}, n`（扫 N 行丢弃，随页深线性劣化） | keyset 游标分页（`WHERE 有序键 > 游标`） |
 | 一次性 load 大结果集进内存（导出 / 遍历） | 流式 / 分块拉取（游标 + 固定 chunk） |
 | 全部读无脑路由副本（含"读自己刚写"） | read-your-writes 请求回主 / 粘主 / 等版本（§3.7） |

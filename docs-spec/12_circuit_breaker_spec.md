@@ -80,6 +80,8 @@
 | 参数调优 | error_threshold + recovery_time | K + 窗口期 |
 ```
 
+> **客户端自适应限流（client-side throttling）语义 + K 选型权衡**（节流启动阈值 = 实际失败率超过 `1−1/K`；作用于**依赖侧**自我节流 vs [`design-spec/07 §3.4`](../design-spec/07_tail_latency_design.md) 作用于**入口侧**的 load shedding 的边界）见 [`design-spec/06 §9.1`](../design-spec/06_resilience_design.md)。本节只登记每个资源**选定**的 K / 窗口 / 采样数，不复制选型方法论（双源真相）。
+
 ---
 
 ## 4. §2 资源差异化参数（强制）

@@ -21,7 +21,7 @@ argument-hint: "[scope] 可选：当前 PR / 指定文件路径 / hot-path-only�
 读以下文件（按顺序）：
 
 1. `docs/architecture/performance_contract.md` —— §1 SLA + §2 热路径清单 + §3 内存预算 + §4 数据访问约束 + §6 背压策略 + §7 性能回归
-2. `docs/architecture/ai_dev_guide.md` §10.2 —— grep 锚 rule-id 索引（R-PERF-*）；§10.10 尾延迟 / 运行时调优类（R-TAIL-*）；§10.9 部署运行时（R-DEPLOY-GOMAXPROCS / R-RUNTIME-MEMLIMIT）
+2. `docs/architecture/ai_dev_guide.md` §10.2 —— grep 锚 rule-id 索引（R-PERF-* / R-CACHE-* / `R-LOCALMIRROR-STALE-READY`）；§10.10 尾延迟 / 运行时调优类（R-TAIL-*）；§10.9 部署运行时（R-DEPLOY-GOMAXPROCS / R-RUNTIME-MEMLIMIT）
 3. `docs/circuit_breaker/circuit_breaker_design.md` §2 —— 熔断参数（避免与 22 双源真相）
 4. `docs/BUILD_STATUS.md` §11 —— 约束清单状态轨道
 

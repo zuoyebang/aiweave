@@ -194,7 +194,7 @@ func Go(pool Pool, task func()) {
 }
 ```
 
-### 9.4 嵌入式库并发（本地 SQLite，详见 05 §本地镜像）
+### 9.4 嵌入式库并发（本地 SQLite，组件蓝图与原子发布不变量详见 [`05 §9.4`](05_caching_design.md)）
 
 本地 SQLite 读是**进程内、命中私有 page cache 的 CPU-bound 访问（~1–50µs）**，不是网络 IO（ms 级）——所以读池按 §3.2 的 **CPU-bound 规则按核数定容**，而非套用网络池量级（~100）。
 
