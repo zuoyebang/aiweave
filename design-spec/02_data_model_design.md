@@ -1,5 +1,19 @@
 # 02 - 数据建模设计决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"面对一个需求，怎么把实体落成表结构、索引、分库分表、数据访问层与组装层"。目标：**让数据库在热路径上尽可能少出现、出现时尽可能批量与并行**。
 >
 > **边界先声明**：DDL 字段精度、分库设计、Redis Key 注册表、GORM Model 规范等**表示规则的真相源在 [`docs-spec/05`](../docs-spec/05_schema_design_spec.md)**；批量 / 聚合编排在 [`01`](01_io_design.md) + [`docs-spec/25`](../docs-spec/25_io_aggregation_spec.md)，本篇只引用不复制。本篇新增决策资产：数据访问层范式、分库分表决策树、shard 分组并行、组装层 map 入参纪律。

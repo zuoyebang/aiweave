@@ -1,5 +1,19 @@
 # 26 - 配置中心与凭据加密规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 `docs/architecture/config.md` 中"**配置上云 + 配置中心集成 + 凭据加密 + 启动期拉取落盘**"部分的内容结构与维护规则。
 >
 > 本规范是 AIWeave 的 P2 规范。[`04 §2`](04_architecture_overview_spec.md) 治理 `config.md` 的总体结构（分类 / 清单 / Go struct 映射），**本规范是其"配置上云 / 凭据安全"维度的真相源**——两者通过 §2 边界划分协作，不重复。

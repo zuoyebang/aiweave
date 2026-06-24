@@ -1,5 +1,19 @@
 # 03 - 并发模型设计决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"面对一个需求，怎么选并发原语、给并行 fan-out 的协程池定容量、管好共享状态与 goroutine 生命周期"。并行是 IO 视角（[`01`](01_io_design.md)）"消灭独立串行"的执行底座。
 >
 > **边界先声明**：共享状态注册表、锁策略、Channel 规则、资源生命周期、危险操作清单、worker pool 容量等**约束规则的真相源在 [`docs-spec/20`](../docs-spec/20_concurrency_safety_spec.md)**；channel 容量 / 背压在 [`docs-spec/22 §6.1`](../docs-spec/22_performance_contract_spec.md)，本篇只引用不复制。本篇新增决策资产：并发原语选型、**协程池容量定量方法（Little 定律）**、阻塞不变量、内联兜底提交器。

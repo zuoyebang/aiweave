@@ -1,5 +1,19 @@
 # 01 - Skill 编写指南（含公共章节真相源）
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 `.claude/skills/{name}/SKILL.md` 的标准结构、frontmatter 格式、步骤化要求、文档同步契约、测试同步契约。
 >
 > **本文同时是 19 个 Skill 的"公共章节真相源"**——所有 SKILL.md 中的公共部分（第 0 步前置 / 第 1 步必读 / 第 4 步文档同步 / 第 5 步测试同步 / 第 6 步验证）都从下方 §A-§E 抽取，每个 SKILL.md 只保留 Skill 特定内容。

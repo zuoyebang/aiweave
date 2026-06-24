@@ -1,5 +1,19 @@
 # 19 - 增量需求同步规范（核心场景）
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 **"开发完一个需求后，把需求设计 + 代码改动 + 本规范一起交给 AI，让 AI 补全/完善工程的全链路文档"** 这一场景的标准流程、输入信物、判定逻辑、输出契约。
 >
 > 这是规范的**第二种使用模式**——与"从零建设" / "从 docs/ 重建代码"并列的核心场景。

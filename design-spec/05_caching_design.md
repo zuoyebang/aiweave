@@ -1,5 +1,19 @@
 # 05 - 缓存策略设计决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"面对一个需求，怎么选缓存层级、统一访问层、降级方向、Key 与编码、回源与失效"。缓存是把"远端往返"压成"本地命中"的主力（IO 三维度的"往返"维，见 [`01 §1`](01_io_design.md)）。
 >
 > **边界先声明**：Redis-first / 三级缓存 / Key 模式 / Hash 字段映射 / Flush 机制等**表示规则的真相源在 [`docs-spec/06`](../docs-spec/06_cache_design_spec.md)**；跨实例聚合 / 单飞契约在 [`docs-spec/25`](../docs-spec/25_io_aggregation_spec.md)；熔断在 [`06`](06_resilience_design.md) + [`docs-spec/12`](../docs-spec/12_circuit_breaker_spec.md)，本篇只引用不复制。本篇新增决策资产：统一访问层职责、**读写非对称降级语义**、多级缓存判定、值编码 / Hash 分桶 / 本地镜像 / 加密 ID 的选型。

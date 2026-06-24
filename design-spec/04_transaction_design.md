@@ -1,5 +1,19 @@
 # 04 - 事务一致性设计决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"面对一个需求，怎么划事务边界、选一致性模型、设计补偿/幂等，以及何时用弱一致 + 边界兜底换掉强一致的复杂度"。
 >
 > **边界先声明**：事务模型选型清单、事务边界清单、补偿逻辑、幂等性、一致性窗口、失败路径全景图等**规则的真相源在 [`docs-spec/21`](../docs-spec/21_distributed_transaction_spec.md)**；写路径削峰编排在 [`01 §3.2`](01_io_design.md)，本篇只引用不复制。本篇新增决策资产：一致性强度判定、本地 vs 分布式事务决策树、**弱一致 + 边界兜底 + 监控**的取舍方法、读写分离消除幂等复杂度。

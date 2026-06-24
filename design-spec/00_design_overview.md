@@ -1,5 +1,19 @@
 # 00 - 高性能架构方法论总纲
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 `design-spec/` 这一支柱的定位、统一骨架、与 `docs-spec/` 的边界，以及"技术方案生成"如何走完七大决策视角。
 >
 > 本支柱回答 `docs-spec/` 不回答的问题：**面对一个需求，怎么"做出"架构决策**——而不是决策定了之后怎么写下来。

@@ -1,5 +1,19 @@
 # 18 - 分阶段构建路径文档规范（通用方法论）
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 `docs/architecture/mvp_rebuild_path.md` 的内容结构。
 >
 > **本规范把"分阶段构建路径"从绑定单一项目的 Stage 列表提升为**通用方法论****：覆盖三种使用场景——**从零建设（forward）**、**从 docs 重建代码（rebuild）**、**重构演进（refactor）**——共用同一套分阶段心智模型。

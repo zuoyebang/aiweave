@@ -1,5 +1,19 @@
 # 01 - IO 设计决策规范 ⭐
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 本支柱的**旗舰范本**。回答"面对一个涉及数据访问的需求，怎么把它的 IO 形态判出来、选对编排方案"。核心命题：**把 IO 解决了，工程的技术天花板就高**（见 [`00 §2.2`](00_design_overview.md)）。
 >
 > **边界先声明**：三条 IO 铁律、聚合器五阶段、IO 往返预算、IO 回归测试等**硬规则的真相源在 [`docs-spec/25`](../docs-spec/25_io_aggregation_spec.md)**，本篇**只引用不复制**；并行原语的容量 / goroutine 生命周期在 [`docs-spec/20`](../docs-spec/20_concurrency_safety_spec.md) 与 [`03`](03_concurrency_design.md)。本篇新增的是上游决策资产：**三维度框架、读写路径分治、读/写两棵决策树、默认选型与升级路径、编排方案权衡矩阵、反模式速查**。

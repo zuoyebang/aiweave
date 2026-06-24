@@ -1,5 +1,19 @@
 # 06 - 稳定性设计决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"面对一个需求，怎么选熔断 / 降级 / 限流策略与连接池 / 配置 / 分层 / 可观测性基线"。这套底座支撑 IO 设计在生产稳定跑。
 >
 > **边界先声明**：熔断算法选型 / 差异化参数 / 接入方式（[`docs-spec/12`](../docs-spec/12_circuit_breaker_spec.md)）、全局 SLA / 热路径 / 内存预算 / 背压（[`docs-spec/22`](../docs-spec/22_performance_contract_spec.md)）、可观测性 Metrics（[`docs-spec/23`](../docs-spec/23_observability_spec.md)）、配置中心 / 凭据加密（[`docs-spec/26`](../docs-spec/26_config_center_spec.md)）、结构化日志（[`docs-spec/13`](../docs-spec/13_logging_spec.md)）等**规则真相源在对应 docs-spec**，本篇只引用不复制。本篇新增决策资产：熔断形态选型、连接池基线、分层与数据层禁日志、危险开关双门禁。

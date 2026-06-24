@@ -1,5 +1,19 @@
 # 27 - 部署与运行时生命周期规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 规定 `docs/architecture/deployment.md` 中"**部署产物蓝图 + 容器镜像约束 + 健康探针语义 + 启动就绪时序 + 优雅关闭时序 + 发布回滚策略**"的内容结构与维护规则。
 >
 > 本规范是 AIWeave 的 P0 规范。它补齐第一性目标的最后一块短板——**"仅凭 docs/ + .claude/skills/ 重建整个工程"必须包含"重建出的工程能被部署、能优雅启停"**，否则重建产物虽行为等价却无法上线。

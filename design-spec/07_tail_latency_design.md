@@ -1,5 +1,19 @@
 # 07 - 尾延迟与自适应过载控制决策规范
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 回答"当瓶颈不是均值 / 吞吐、而是 **P99 / P999 长尾**与过载下的稳定性时，怎么判形态、选治理手段"。
 >
 > **核心命题**：前六视角压的是**均值与吞吐**（消灭往返、批量、并行、削峰）；长尾由一组**方向相反**的手段治理——对冲请求**主动增加**一次往返、自适应限流**主动让渡**吞吐换稳定。把均值压到极致后，决定用户体验与系统存活的，是尾部那一小撮请求和过载那一瞬间的行为。
