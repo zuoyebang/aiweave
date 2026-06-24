@@ -1,5 +1,19 @@
 # AIWeave 核心原则
 
+<div align="center">
+
+## 🌟 最新内容请认准新主页
+
+**AIWeave 已转入全新主仓库持续深耕，最新版本与后续演进，现已统一汇聚于此**
+
+[![前往 AIWeave 新主仓库 · xurb-nexus/aiweave](https://img.shields.io/badge/🚀%20前往新主仓库-xurb--nexus%2Faiweave-5B21B6?style=for-the-badge&logo=github&logoColor=white)](https://github.com/xurb-nexus/aiweave)
+
+by **[XuRuibo](mailto:hustxurb@163.com)** · 持续更新 · 欢迎 Star ⭐ 与关注
+
+</div>
+
+---
+
 > 本文是 AIWeave 规范的最高优先级纪律。任何 docs-spec/ 与 skills-spec/ 中的具体规则，都从本文的原则推导而来。
 
 ---
